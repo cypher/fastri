@@ -15,8 +15,10 @@ class Test_RIService < Test::Unit::TestCase
   def test_completion_list
     completion_each = %w[each_pair each_byte each_key each_value]
     assert_include(completion_each, @ri.completion_list("each_"))
+    assert_kind_of(Array, @ri.completion_list("each_"))
 
     assert_include(%w[Array Fixnum Hash String], @ri.completion_list(""))
+    assert_kind_of(Array, @ri.completion_list(""))
 
     assert_include(%w[Array ArgumentError], @ri.completion_list("Ar"))
   end
@@ -26,16 +28,19 @@ class Test_RIService < Test::Unit::TestCase
                     @ri.info("Array"))
     assert_include(%w[each each_key each_pair each_value empty],
                     @ri.info("Hash"))
+    assert_kind_of(String, @ri.info("Hash"))
   end
 
   def test_args
     assert_match(/map\s+\{\|\s*\w+\s*\|\s+block\s+\}/, 
                  @ri.args("map"))
+    assert_kind_of(String,@ri.args("map"))
   end
 
   def test_class_list
     assert_include(%w[StringIO Range Array Hash String Struct],
                    @ri.class_list("each"))
+    assert_kind_of(Array, @ri.class_list("each"))
     assert_include(%w[Hash Struct],
                    @ri.class_list("each_pair"))
     assert_equal(nil, @ri.class_list("__super_bogus_method___"))
