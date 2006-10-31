@@ -1,5 +1,5 @@
 require 'test/unit'
-require 'fastri-server'
+load File.join(File.dirname(__FILE__), "..", "bin", "fastri-server")
 
 class Test_RIService < Test::Unit::TestCase
   # only created once, since it takes a long time

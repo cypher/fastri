@@ -1,4 +1,5 @@
-# fastri-server.rb: serve RI documentation over DRb 
+#!/usr/bin/env ruby
+# fastri-server: serve RI documentation over DRb 
 #
 # Based on ri-emacs.rb by Kristof Bastiaensen <kristof@vleeuwen.org>
 #
