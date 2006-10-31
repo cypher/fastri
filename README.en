@@ -24,6 +24,20 @@ without needing to indicate the DRb URIs manually. It can work across
 machines if you make sure the ring server is bound to the correct interface,
 and the ACL permissions are correct.
 
+Quickstart
+----------
+ $ fastri-server             (blocks)
+Later,
+ $ fri String
+ ---------------------------------------------------------- Class: String
+      A +String+ object holds and manipulates an arbitrary sequence of
+      bytes, typically representing characters. String objects may be
+      created using +String::new+ or as literals.
+ ...
+
+Read on for more information, including how to make FastRI work across
+machines.
+
 Launching the server
 --------------------
 For local usage, just
