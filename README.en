@@ -5,7 +5,7 @@ Originally based on ri-emacs.rb by
 Overview
 ========
 FastRI is an alternative to the ri command-line tool. It is *much* faster,
-and also allows you to to offer RI lookup services over DRb. 
+and also allows you to offer RI lookup services over DRb. 
 
 Install
 =======
@@ -20,7 +20,7 @@ There are two parts to FastRI:
 * the client: fri
 
 FastRI uses a Rinda Ring to allow servers to be discovered automatically
-without needing to indicate the drb URIs manually. It can work across 
+without needing to indicate the DRb URIs manually. It can work across 
 machines if you make sure the ring server is bound to the correct interface,
 and the ACL permissions are correct.
 
