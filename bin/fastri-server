@@ -65,15 +65,17 @@ class StringRedirectedDisplay < DefaultDisplay
   end
 end
 
-class RedirectedFormatter < RI::TextFormatter
-  attr_accessor :stringio
-  def initialize(*options)
-    super
-    @stringio = StringIO.new("")
-  end
-
+class RI::TextFormatter
   def puts(*a); @stringio.puts(*a) end
   def print(*a); @stringio.print(*a) end
+end
+
+class RedirectedFormatter < RI::AnsiFormatter
+  attr_accessor :stringio
+  def initialize(*options)
+    @stringio = StringIO.new("")
+    super
+  end
 end
 
 class RIService
@@ -195,12 +197,12 @@ class RIService
 
       qdata.methods = qdata.methods.find_all { |m| m.name == qdata.desc.method_name }
       return nil if qdata.methods.empty?
-      sio = nil
+      params_text = ""
       qdata.methods.each do |m|
         meth = @ri_reader.get_method(m)
-        sio = capture_stdout(false) { @display.full_params(meth) }
+        params_text << capture_stdout { @display.full_params(meth) }
       end
-      sio
+      params_text
    end
 
    # return a list of classes for the method keyw
@@ -223,7 +225,7 @@ class RIService
 
    private
    require "stringio"
-   def capture_stdout(reset = true)
+   def capture_stdout
      @display.reset_stringio
      yield
      @display.stringio.string
