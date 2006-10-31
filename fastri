@@ -18,13 +18,56 @@
 #----------------------------------------------------------------------
 
 require 'rinda/ring'
+require 'optparse'
+
+# we bind to 127.0.0.1 by default, because otherwise Ruby will try with
+# 0.0.0.0, which results in a DNS request, adding way too much latency
+options = {:addr => "127.0.0.1"}
+override_addr_env = false
+optparser = OptionParser.new do |opts|
+  opts.banner = "Usage: fastri [options] <query>"
+
+  opts.on("-s", "--bind [ADDR]", "Use ADDR for DRb connections.",
+          "(default: 127.0.0.1)") do |addr|
+    options[:addr] = addr
+    override_addr_env = true
+  end
+
+  opts.on("-h", "--help", "Show this help message") do 
+    puts opts
+    exit
+  end
+end
+optparser.parse!
 
 if ARGV.empty?
-  puts "fastri <term>"
+  puts optparser
   exit
 end
-DRb.start_service("druby://127.0.0.1:0")
-ring_server = Rinda::RingFinger.primary
+
+if override_addr_env
+  addr = "druby://#{options[:addr]}:0"
+else
+  addr =  "druby://#{ENV["FASTRI_ADDR"]||options[:addr]}:0"
+end
+
+begin
+  DRb.start_service(addr)
+  ring_server = Rinda::RingFinger.primary
+rescue Exception
+  puts <<EOF
+Couldn't initialize DRb and locate the Ring server.
+
+Please make sure that:
+ * the fastri-server is running, the server is bound to the correct interface,
+   and the ACL setup allows connections from this host
+ * fastri is using the correct interface for incoming DRb requests:
+   either set the FASTRI_ADDR environment variable, or use --bind ADDR, e.g
+      export FASTRI_ADDR="192.168.1.12"
+      fastri Array
+EOF
+  exit(-1)
+end
 service = ring_server.read([:name, :FastRI, nil, nil])[2]
 puts service.info(ARGV[0])
 # vi: set sw=2 expandtab:
