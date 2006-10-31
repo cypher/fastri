@@ -79,13 +79,16 @@ class RIService
    Options = Struct.new(:formatter, :use_stdout, :width)
    QueryData = Struct.new(:desc, :namespaces, :methods)
 
+   def self.untainted_copy(obj)
+     obj.instance_eval{@display = nil}
+     d = Marshal.dump(obj)
+     d.untaint
+     ret = Marshal.load(d)
+     ret.instance_eval{ init_display }
+     ret
+   end
+
    def initialize(paths)
-      options = Options.new
-
-      options.use_stdout = true
-      options.formatter = RedirectedFormatter
-      options.width = 72
-
       begin
          require 'rubygems'
          Dir["#{Gem.path}/doc/*/ri"].each do |path|
@@ -97,8 +100,17 @@ class RIService
       paths = paths || RI::Paths::PATH
 
       @ri_reader = RI::RiReader.new(RI::RiCache.new(paths))
+      init_display
+   end
+
+   def init_display
+      options = Options.new
+      options.use_stdout = true
+      options.formatter = RedirectedFormatter
+      options.width = 72
       @display = StringRedirectedDisplay.new(options)
    end
+   private :init_display
 
    def lookup_keyword(keyw)
      ret = QueryData.new
@@ -221,22 +233,59 @@ end
 
 if $0 == __FILE__
 
+require 'optparse'
+
+options = {:allowed_hosts => ["localhost"], :addr => "127.0.0.1"}
+OptionParser.new do |opts|
+  opts.banner = "Usage: fastri-server.rb [options]"
+
+  opts.on("-a", "--allow [HOST]", "Allow connections from HOST.",
+          "(default: localhost)") do |host|
+    options[:allowed_hosts] << host
+  end
+
+  opts.on("-s", "--bind [ADDR]", "Listen to connections on ADDR.",
+          "(default: 127.0.0.1)") do |addr|
+    options[:addr] = addr
+  end
+
+  opts.on("-h", "--help", "Show this help message") do 
+    puts opts
+    exit
+  end
+end.parse!
+
+service = RIService.untainted_copy(RIService.new(nil))
+
 require 'rinda/ring'
 require 'rinda/tuplespace'
+require 'drb/acl'
 
 class RIService
   include DRbUndumped
 end
-DRb.start_service
+acl_opt = ["deny", "all"]
+options[:allowed_hosts].each{|host| acl_opt.concat ["allow", host.strip]}
+acl = ACL.new(acl_opt)
+DRb.install_acl(acl)
 
+drb_addr = "druby://#{options[:addr]}:0"
+DRb.start_service(drb_addr)
+
+$SAFE = 1
 service_ts = Rinda::TupleSpace.new
 ring_server = Rinda::RingServer.new(service_ts)
 
-service = RIService.new(nil)
 provider = Rinda::RingProvider.new :FastRI, service, "FastRI documentation"
 provider.provide
 
+require 'enumerator'
 puts "FastRI #{FASTRI_VERSION} listening on #{DRb.uri}"
+puts "ACL:"
+acl_opt.each_slice(2){|action, host| puts "%-5s %s" % [action, host]}
+
+# GC periodically
+# keeps the process hot too :)
 Thread.new do 
   loop do
     GC.start
