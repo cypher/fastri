@@ -73,7 +73,7 @@ class RedirectedFormatter < RI::TextFormatter
   def print(*a); @stringio.print(*a) end
 end
 
-class RiEmacs
+class RIService
    Options = Struct.new(:formatter, :use_stdout, :width)
 
    def initialize(paths)
@@ -156,52 +156,7 @@ class RiEmacs
       end
    end
 
-   def complete(keyw, type)
-      list = completion_list(keyw)
-
-      if list.nil?
-         return "nil"
-      elsif type == :all
-         return "(" + list.map { |w| w.inspect }.join(" ") + ")"
-      elsif type == :lambda
-         if list.find { |n|
-               n.split(/(::)|#|\./) == keyw.split(/(::)|#|\./) }
-            return "t"
-         else
-            return "nil"
-         end
-      # type == try
-      elsif list.size == 1 and
-            list[0].split(/(::)|#|\./) == keyw.split(/(::)|#|\./)
-         return "t"
-      end
-
-      first = list.shift;
-      if first =~ /(.*)((?:::)|(?:#))(.*)/
-         other = $1 + ($2 == "::" ? "#" : "::") + $3
-      end
-                        
-      len = first.size
-      match_both = false
-      list.each do |w|
-         while w[0, len] != first[0, len]
-            if other and w[0, len] == other[0, len]
-               match_both = true
-               break
-            end
-            len -= 1
-         end
-      end
-
-      if match_both
-         return other.sub(/(.*)((?:::)|(?:#))/) {
-            $1 + "." }[0, len].inspect
-      else
-         return first[0, len].inspect
-      end
-   end
-
-   def display_info(keyw)
+   def info(keyw)
       return nil unless lookup_keyw(keyw)
       
       if @methods.nil?
@@ -217,7 +172,7 @@ class RiEmacs
       end
    end
 
-   def display_args(keyw)
+   def args(keyw)
       return nil unless lookup_keyw(keyw)
       return nil unless @desc.class_names.empty?
 
@@ -239,10 +194,7 @@ class RiEmacs
 
       @methods = @methods.find_all { |m| m.name == @desc.method_name }
 
-      return "(" + @methods.map do |m|
-         "(" + m.full_name.sub(/(.*)(#|(::)).*/,
-                                rep).inspect + ")"
-      end.uniq.join(" ") + ")"
+      return @methods.map{|m| m.full_name.sub(/(.*)(#|(::)).*/, rep) }.uniq
    end
 
    # flag means (#|::) 
@@ -276,7 +228,7 @@ DRb.start_service
 service_ts = Rinda::TupleSpace.new
 ring_server = Rinda::RingServer.new(service_ts)
 
-service = RiEmacs.new(nil)
+service = RIService.new(nil)
 provider = Rinda::RingProvider.new :FastRI, service, "FastRI documentation"
 provider.provide
 

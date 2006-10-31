@@ -26,5 +26,5 @@ end
 DRb.start_service("druby://127.0.0.1:0")
 ring_server = Rinda::RingFinger.primary
 service = ring_server.read([:name, :FastRI, nil, nil])[2]
-puts service.display_info(ARGV[0])
+puts service.info(ARGV[0])
 # vi: set sw=2 expandtab:
