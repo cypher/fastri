@@ -75,6 +75,7 @@ end
 
 class RIService
    Options = Struct.new(:formatter, :use_stdout, :width)
+   QueryData = Struct.new(:desc, :namespaces, :methods)
 
    def initialize(paths)
       options = Options.new
@@ -97,89 +98,90 @@ class RIService
       @display = StringRedirectedDisplay.new(options)
    end
 
-   def lookup_keyw(keyw)
-      begin
-         @desc = NameDescriptor.new(keyw)
-      rescue RiError => e
-         return false
-      end
-      @namespaces = @ri_reader.top_level_namespace
+   def lookup_keyword(keyw)
+     ret = QueryData.new
+     begin
+       ret.desc = NameDescriptor.new(keyw)
+     rescue RiError => e
+       return nil
+     end
+     ret.namespaces = @ri_reader.top_level_namespace
 
-      container = @namespaces
-      for class_name in @desc.class_names
-         return false if container.empty?
-         @namespaces = @ri_reader.lookup_namespace_in(class_name, container)
-         container = @namespaces.find_all {|m| m.name == class_name}
-      end
+     container = ret.namespaces
+     for class_name in ret.desc.class_names
+       return nil if container.empty?
+       ret.namespaces = @ri_reader.lookup_namespace_in(class_name, container)
+       container = ret.namespaces.find_all {|m| m.name == class_name}
+     end
 
-      if @desc.method_name.nil?
+      if ret.desc.method_name.nil?
          if [?., ?:, ?#].include? keyw[-1]
-            @namespaces = container
+            ret.namespaces = container
             is_class_method = case keyw[-1]
                               when ?.: nil
                               when ?:: true
                               when ?#: false
                               end
-            @methods = @ri_reader.find_methods("", is_class_method,
-                                               container)
-            return false if @methods.empty?
+            ret.methods = @ri_reader.find_methods("", is_class_method, container)
+            return nil if ret.methods.empty?
          else
-            @namespaces = @namespaces.find_all{ |n| n.name.index(class_name).zero? }
-            return false if @namespaces.empty?
-            @methods = nil
+            ret.namespaces = ret.namespaces.find_all{ |n| n.name.index(class_name).zero? }
+            return nil if ret.namespaces.empty?
+            ret.methods = nil
          end
       else
-         return false if container.empty?
-         @namespaces = container
-         @methods = @ri_reader.find_methods(@desc.method_name,
-                                            @desc.is_class_method,
-                                            container)
-         @methods = @methods.find_all { |m|
-            m.name.index(@desc.method_name).zero? }
-         return false if @methods.empty?
+         return nil if container.empty?
+         ret.namespaces = container
+         ret.methods = @ri_reader.find_methods(ret.desc.method_name,
+                                               ret.desc.is_class_method,
+                                               container)
+         ret.methods = ret.methods.find_all do |m|
+           m.name.index(ret.desc.method_name).zero?
+         end
+         return nil if ret.methods.empty?
       end
       
-      return true
+      ret
    end
 
    def completion_list(keyw)
       return @ri_reader.full_class_names if keyw == ""
       
-      return nil unless lookup_keyw(keyw)
+      return nil unless (qdata = lookup_keyword(keyw))
 
-      if @methods.nil?
-         return @namespaces.map{ |n| n.full_name }
-      elsif @desc.class_names.empty?
-         return @methods.map { |m| m.name }.uniq
+      if qdata.methods.nil?
+         return qdata.namespaces.map{ |n| n.full_name }
+      elsif qdata.desc.class_names.empty?
+         return qdata.methods.map { |m| m.name }.uniq
       else
-         return @methods.map { |m| m.full_name }
+         return qdata.methods.map { |m| m.full_name }
       end
    end
 
    def info(keyw)
-      return nil unless lookup_keyw(keyw)
+      return nil unless (qdata = lookup_keyword(keyw))
       
-      if @methods.nil?
-         @namespaces = @namespaces.find_all { |n| n.full_name == @desc.full_class_name }
-         return nil if @namespaces.empty?
-         klass = @ri_reader.get_class(@namespaces[0])
+      if qdata.methods.nil?
+         qdata.namespaces = qdata.namespaces.find_all { |n| n.full_name == qdata.desc.full_class_name }
+         return nil if qdata.namespaces.empty?
+         klass = @ri_reader.get_class(qdata.namespaces[0])
          capture_stdout { @display.display_class_info(klass, @ri_reader) }
       else
-         @methods = @methods.find_all { |m| m.name == @desc.method_name }
-         return nil if @methods.empty?
-         meth = @ri_reader.get_method(@methods[0])
+         qdata.methods = qdata.methods.find_all { |m| m.name == qdata.desc.method_name }
+         return nil if qdata.methods.empty?
+         meth = @ri_reader.get_method(qdata.methods[0])
          capture_stdout { @display.display_method_info(meth) }
       end
    end
 
    def args(keyw)
-      return nil unless lookup_keyw(keyw)
-      return nil unless @desc.class_names.empty?
+      return nil unless (qdata = lookup_keyword(keyw))
+      return nil unless qdata.desc.class_names.empty?
 
-      @methods = @methods.find_all { |m| m.name == @desc.method_name }
-      return nil if @methods.empty?
+      qdata.methods = qdata.methods.find_all { |m| m.name == qdata.desc.method_name }
+      return nil if qdata.methods.empty?
       sio = nil
-      @methods.each do |m|
+      qdata.methods.each do |m|
         meth = @ri_reader.get_method(m)
         sio = capture_stdout(false) { @display.full_params(meth) }
       end
@@ -189,12 +191,12 @@ class RIService
    # return a list of classes for the method keyw
    # return nil if keyw has already a class
    def class_list(keyw, rep='\1')
-      return nil unless lookup_keyw(keyw)
-      return nil unless @desc.class_names.empty?
+      return nil unless (qdata = lookup_keyword(keyw))
+      return nil unless qdata.desc.class_names.empty?
 
-      @methods = @methods.find_all { |m| m.name == @desc.method_name }
+      qdata.methods = qdata.methods.find_all { |m| m.name == qdata.desc.method_name }
 
-      return @methods.map{|m| m.full_name.sub(/(.*)(#|(::)).*/, rep) }.uniq
+      return qdata.methods.map{|m| m.full_name.sub(/(.*)(#|(::)).*/, rep) }.uniq
    end
 
    # flag means (#|::) 
