@@ -222,7 +222,7 @@ if $0 == __FILE__
 require 'rinda/ring'
 require 'rinda/tuplespace'
 
-class RiEmacs
+class RIService
   include DRbUndumped
 end
 DRb.start_service
@@ -234,7 +234,7 @@ service = RIService.new(nil)
 provider = Rinda::RingProvider.new :FastRI, service, "FastRI documentation"
 provider.provide
 
-puts "I am #{Process.pid}"
+puts "I am #{Process.pid} listening on #{DRb.uri}"
 Thread.new do 
   loop do
     GC.start
