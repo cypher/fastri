@@ -28,6 +28,8 @@ require 'rdoc/ri/ri_reader'
 require 'rdoc/ri/ri_formatter'
 require 'rdoc/ri/ri_display'
 
+FASTRI_VERSION = "0.0.1"
+
 class DefaultDisplay
   def full_params(method)
     method.params.split(/\n/).each do |p|
@@ -234,7 +236,7 @@ service = RIService.new(nil)
 provider = Rinda::RingProvider.new :FastRI, service, "FastRI documentation"
 provider.provide
 
-puts "I am #{Process.pid} listening on #{DRb.uri}"
+puts "FastRI #{FASTRI_VERSION} listening on #{DRb.uri}"
 Thread.new do 
   loop do
     GC.start
