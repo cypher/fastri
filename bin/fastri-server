@@ -306,6 +306,8 @@ require 'drb/acl'
 class RIService
   include DRbUndumped
 end
+
+#{{{ start DRb service
 acl_opt = ["deny", "all"]
 options[:allowed_hosts].each{|host| acl_opt.concat ["allow", host.strip]}
 acl = ACL.new(acl_opt)
@@ -321,18 +323,49 @@ ring_server = Rinda::RingServer.new(service_ts)
 provider = Rinda::RingProvider.new :FastRI, service, "FastRI documentation"
 provider.provide
 
+# {{{ Init message
 require 'enumerator'
 puts "FastRI #{FASTRI_VERSION} listening on #{DRb.uri}"
 puts "ACL:"
 acl_opt.each_slice(2){|action, host| puts "%-5s %s" % [action, host]}
 
-# GC periodically
+# {{{ GC periodically
 # keeps the process hot too :)
 Thread.new do 
   loop do
     GC.start
     sleep 300
   end
+end
+
+if $DEBUG
+  # trying to see where our memory is going
+  population = Hash.new{|h,k| h[k] = [0,0]}
+  array_sizes = Hash.new{|h,k| h[k] = 0}
+  ObjectSpace.each_object do |object|
+    size = case object   # rough estimates
+           when Array
+             array_sizes[object.size / 10] += 1
+             case object.size
+             when 0..16
+               20 + 64
+             else
+               20 + 4 * object.size * 1.5
+             end
+           when Hash;    40 + 4 * [object.size / 5, 11].max + 16 * object.size
+           when String;  30 + object.size
+           else 120 # the iv_tbl, etc
+           end
+    count, tsize = population[object.class] 
+    population[object.class] = [count + 1, tsize + size]
+  end
+
+  population.sort_by{|k,(c,s)| s}.reverse[0..10].each do |klass, (count, bytes)|
+    puts "%-20s  %7d  %9d" % [klass, count, bytes]
+  end
+
+  puts "Array sizes:"
+  array_sizes.sort.each{|k,v| puts "%5d  %6d" % [k * 10, v]}
 end
 
 DRb.thread.join
