@@ -70,7 +70,7 @@ class RI::TextFormatter
   def print(*a); @stringio.print(*a) end
 end
 
-class RedirectedFormatter < RI::AnsiFormatter
+module FormatterRedirection
   attr_accessor :stringio
   def initialize(*options)
     @stringio = StringIO.new("")
@@ -78,16 +78,22 @@ class RedirectedFormatter < RI::AnsiFormatter
   end
 end
 
+class RedirectedAnsiFormatter < RI::AnsiFormatter
+  include FormatterRedirection
+end
+
+class RedirectedTextFormatter < RI::TextFormatter
+  include FormatterRedirection
+end
+
 class RIService
    Options = Struct.new(:formatter, :use_stdout, :width)
    QueryData = Struct.new(:desc, :namespaces, :methods)
 
    def self.untainted_copy(obj)
-     obj.instance_eval{@display = nil}
      d = Marshal.dump(obj)
      d.untaint
      ret = Marshal.load(d)
-     ret.instance_eval{ init_display }
      ret
    end
 
@@ -127,17 +133,7 @@ class RIService
       paths = paths || RI::Paths::PATH
 
       @ri_reader = RI::RiReader.new(RI::RiCache.new(paths))
-      init_display
    end
-
-   def init_display
-      options = Options.new
-      options.use_stdout = true
-      options.formatter = RedirectedFormatter
-      options.width = 72
-      @display = StringRedirectedDisplay.new(options)
-   end
-   private :init_display
 
    def lookup_keyword(keyw)
      ret = QueryData.new
@@ -199,23 +195,27 @@ class RIService
       end
    end
 
-   def info(keyw)
+   def info(keyw, type = :ansi)
       return nil unless (qdata = lookup_keyword(keyw))
       
       if qdata.methods.nil?
          qdata.namespaces = qdata.namespaces.find_all { |n| n.full_name == qdata.desc.full_class_name }
          return nil if qdata.namespaces.empty?
          klass = @ri_reader.get_class(qdata.namespaces[0])
-         capture_stdout { @display.display_class_info(klass, @ri_reader) }
+         capture_stdout(display(type)) do |display|
+           display.display_class_info(klass, @ri_reader)
+         end
       else
          qdata.methods = qdata.methods.find_all { |m| m.name == qdata.desc.method_name }
          return nil if qdata.methods.empty?
          meth = @ri_reader.get_method(qdata.methods[0])
-         capture_stdout { @display.display_method_info(meth) }
+         capture_stdout(display(type)) do |display|
+           display.display_method_info(meth)
+         end
       end
    end
 
-   def args(keyw)
+   def args(keyw, type = :ansi)
       return nil unless (qdata = lookup_keyword(keyw))
       return nil unless qdata.desc.class_names.empty?
 
@@ -224,7 +224,9 @@ class RIService
       params_text = ""
       qdata.methods.each do |m|
         meth = @ri_reader.get_method(m)
-        params_text << capture_stdout { @display.full_params(meth) }
+        params_text << capture_stdout(display(type)) do |display|
+          display.full_params(meth)
+        end
       end
       params_text
    end
@@ -248,11 +250,22 @@ class RIService
    end
 
    private
-   require "stringio"
-   def capture_stdout
-     @display.reset_stringio
-     yield
-     @display.stringio.string
+   def display(type)
+      options = Options.new
+      options.use_stdout = true
+      case type.to_sym
+      when :ansi
+        options.formatter = RedirectedAnsiFormatter
+      else
+        options.formatter = RedirectedTextFormatter
+      end
+      options.width = 72
+      StringRedirectedDisplay.new(options)
+   end
+
+   def capture_stdout(display)
+     yield display
+     display.stringio.string
    end
 end
 
