@@ -30,7 +30,7 @@ override_addr_env = false
 optparser = OptionParser.new do |opts|
   opts.banner = "Usage: fri [options] <query>"
 
-  opts.on("-s", "--bind [ADDR]", "Bind to ADDR for incoming DRb connections.",
+  opts.on("-s", "--bind ADDR", "Bind to ADDR for incoming DRb connections.",
           "(default: 127.0.0.1)") do |addr|
     options[:addr] = addr
     override_addr_env = true

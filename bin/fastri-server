@@ -279,12 +279,12 @@ options = {:allowed_hosts => ["127.0.0.1"], :addr => "127.0.0.1"}
 OptionParser.new do |opts|
   opts.banner = "Usage: fastri-server.rb [options]"
 
-  opts.on("-a", "--allow [HOST]", "Allow connections from HOST.",
+  opts.on("-a", "--allow HOST", "Allow connections from HOST.",
           "(default: 127.0.0.1)") do |host|
     options[:allowed_hosts] << host
   end
 
-  opts.on("-s", "--bind [ADDR]", "Listen to connections on ADDR.",
+  opts.on("-s", "--bind ADDR", "Listen to connections on ADDR.",
           "(default: 127.0.0.1)") do |addr|
     options[:addr] = addr
   end
