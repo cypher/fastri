@@ -262,12 +262,12 @@ if $0 == __FILE__
 
 require 'optparse'
 
-options = {:allowed_hosts => ["localhost"], :addr => "127.0.0.1"}
+options = {:allowed_hosts => ["127.0.0.1"], :addr => "127.0.0.1"}
 OptionParser.new do |opts|
   opts.banner = "Usage: fastri-server.rb [options]"
 
   opts.on("-a", "--allow [HOST]", "Allow connections from HOST.",
-          "(default: localhost)") do |host|
+          "(default: 127.0.0.1)") do |host|
     options[:allowed_hosts] << host
   end
 
