@@ -90,38 +90,6 @@ class RIService
    Options = Struct.new(:formatter, :use_stdout, :width)
    QueryData = Struct.new(:desc, :namespaces, :methods)
 
-   def self.untainted_copy(obj)
-     d = Marshal.dump(obj)
-     d.untaint
-     ret = Marshal.load(d)
-     ret
-   end
-
-   def self.untainted_new(*a)
-     obj = new(*a)
-     recursive_untaint(obj, {})
-     obj
-   end
-
-   def self.recursive_untaint(obj, done = {})
-     return if done[obj.object_id]
-     obj.untaint
-     done[obj.object_id] = true
-     case obj
-     when Array; obj.each{|x| recursive_untaint(x, done)}
-     when Hash
-       obj.each_pair do |k,v|
-         recursive_untaint(k, done)
-         recursive_untaint(v, done)
-       end
-     when Struct; obj.each{|x| recursive_untaint(x, done)}
-     end
-     obj.instance_variables.each do |iv|
-       o = obj.instance_variable_get(iv)
-       recursive_untaint(o, done)
-     end
-   end
-
    def initialize(paths)
       begin
          require 'rubygems'
@@ -296,7 +264,11 @@ OptionParser.new do |opts|
   end
 end.parse!
 
-service = RIService.untainted_new(nil)
+# The local environment is trusted --- what we don't trust is what would come
+# from the DRb connection. This way the RIService will be untainted, and we
+# will be able to use it with $SAFE = 1.
+ObjectSpace.each_object{|obj| obj.untaint unless obj.frozen? }
+service = RIService.new(nil)
 GC.start
 
 require 'rinda/ring'
