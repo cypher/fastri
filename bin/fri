@@ -22,7 +22,10 @@ require 'optparse'
 
 # we bind to 127.0.0.1 by default, because otherwise Ruby will try with
 # 0.0.0.0, which results in a DNS request, adding way too much latency
-options = {:addr => "127.0.0.1"}
+options = {
+  :addr   => "127.0.0.1",
+  :format => "ansi"
+}
 override_addr_env = false
 optparser = OptionParser.new do |opts|
   opts.banner = "Usage: fri [options] <query>"
@@ -31,6 +34,11 @@ optparser = OptionParser.new do |opts|
           "(default: 127.0.0.1)") do |addr|
     options[:addr] = addr
     override_addr_env = true
+  end
+
+  opts.on("-f", "--format FMT", "Format to use when displaying output:",
+          "   ansi, plain (default: ansi)") do |format|
+    options[:format] = format
   end
 
   opts.on("-h", "--help", "Show this help message") do 
@@ -69,5 +77,5 @@ EOF
   exit(-1)
 end
 service = ring_server.read([:name, :FastRI, nil, nil])[2]
-puts service.info(ARGV[0])
+puts service.info(ARGV[0], options[:format])
 # vi: set sw=2 expandtab:
