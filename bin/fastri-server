@@ -114,6 +114,7 @@ class RIService
          recursive_untaint(k, done)
          recursive_untaint(v, done)
        end
+     when Struct; obj.each{|x| recursive_untaint(x, done)}
      end
      obj.instance_variables.each do |iv|
        o = obj.instance_variable_get(iv)
