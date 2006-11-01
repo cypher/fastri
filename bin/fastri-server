@@ -292,8 +292,18 @@ $SAFE = 1
 service_ts = Rinda::TupleSpace.new
 ring_server = Rinda::RingServer.new(service_ts)
 
-provider = Rinda::RingProvider.new :FastRI, service, "FastRI documentation"
-provider.provide
+begin
+  provider = Rinda::RingProvider.new :FastRI, service, "FastRI documentation"
+  provider.provide
+rescue Exception
+  puts <<EOF
+The FastRI service could not be registered in the Ring.
+This is probably due to the Ring being bound to an unreachable address.
+You can specify which address the Ring should be bound to with
+  fastri-server --bind ADDRESS
+EOF
+  exit
+end
 
 # {{{ Init message
 require 'enumerator'
