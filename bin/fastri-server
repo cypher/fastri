@@ -91,6 +91,30 @@ class RIService
      ret
    end
 
+   def self.untainted_new(*a)
+     obj = new(*a)
+     recursive_untaint(obj, {})
+     obj
+   end
+
+   def self.recursive_untaint(obj, done = {})
+     return if done[obj.object_id]
+     obj.untaint
+     done[obj.object_id] = true
+     case obj
+     when Array; obj.each{|x| recursive_untaint(x, done)}
+     when Hash
+       obj.each_pair do |k,v|
+         recursive_untaint(k, done)
+         recursive_untaint(v, done)
+       end
+     end
+     obj.instance_variables.each do |iv|
+       o = obj.instance_variable_get(iv)
+       recursive_untaint(o, done)
+     end
+   end
+
    def initialize(paths)
       begin
          require 'rubygems'
@@ -258,7 +282,8 @@ OptionParser.new do |opts|
   end
 end.parse!
 
-service = RIService.untainted_copy(RIService.new(nil))
+service = RIService.untainted_new(nil)
+GC.start
 
 require 'rinda/ring'
 require 'rinda/tuplespace'
