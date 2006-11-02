@@ -289,18 +289,27 @@ drb_addr = "druby://#{options[:addr]}:0"
 DRb.start_service(drb_addr)
 
 $SAFE = 1
-service_ts = Rinda::TupleSpace.new
-ring_server = Rinda::RingServer.new(service_ts)
+
+$stdout.sync = true
+begin
+  puts "Looking for Ring server..."
+  finder = Rinda::RingFinger.new
+  service_ts = finder.lookup_ring_any(2)
+  puts "Located Ring server at #{service_ts.__drburi}"
+rescue Exception
+  puts "No Ring server found, starting my own."
+  service_ts = Rinda::TupleSpace.new
+  ring_server = Rinda::RingServer.new(service_ts)
+end
 
 begin
-  provider = Rinda::RingProvider.new :FastRI, service, "FastRI documentation"
-  provider.provide
+  service_ts.write([:name, :FastRI, service, 'FastRI documentation'], Rinda::SimpleRenewer.new)
 rescue Exception
   puts <<EOF
 The FastRI service could not be registered in the Ring.
 This is probably due to the Ring being bound to an unreachable address.
 You can specify which address the Ring should be bound to with
-  fastri-server --bind ADDRESS
+  fastri-server --bind ADDRESS --allow ADDRESS
 EOF
   exit
 end
