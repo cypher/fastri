@@ -388,7 +388,7 @@ class RIIndex
       break unless re1 =~ entry
       next if !recursive && re2 !~ entry 
       if scope
-        sources = entry[/\S+ (.*)/,1].split(/\S+/).map{|x| x.to_i}
+        sources = namespace_sources(i)
         if sources.include?(sindex = scope_to_sindex(scope))
           ret << ClassEntry.new(self, entry[/\S+/], i, sindex)
         end
@@ -420,7 +420,7 @@ class RIIndex
         next unless re2 =~ entry
       end
       if scope
-        sources = entry[/\S+ (.*)/,1].split(/\S+/).map{|x| x.to_i}
+        sources = method_sources(i)
         if sources.include?(sindex = scope_to_sindex(scope))
           ret << MethodEntry.new(self, entry[/\S+/], i, sindex)
         end
@@ -493,7 +493,7 @@ class RIIndex
     index = binary_search(array, fullname)
     return nil unless index
     entry = array[index]
-    sources = entry[/\S+ (.*)/,1].split(/\S+/).map{|x| x.to_i}
+    sources = entry[/\S+ (.*)/,1].split(/\s+/).map{|x| x.to_i}
     if scope
       wanted_sidx = scope_to_sindex(scope)
       return nil unless wanted_sidx
