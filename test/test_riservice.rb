@@ -3,7 +3,7 @@ load File.join(File.dirname(__FILE__), "..", "bin", "fastri-server")
 
 class Test_RIService < Test::Unit::TestCase
   # only created once, since it takes a long time
-  @@ri = RIService.new(nil)
+  @@ri = RIService.new(RIIndex.new(RI::Paths::PATH))
   def setup
     @ri = @@ri
   end
