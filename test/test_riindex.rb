@@ -177,6 +177,84 @@ EOF
     assert_equal(["FGH"], @index.lookup_namespace_in("FGH", toplevel2).map{|x| x.full_name})
   end
 
+  def test_find_class_by_name
+    class_entry = nil
+    class << @index; self end.module_eval do
+      define_method(:get_class){|x| class_entry = x}
+    end
+    @index.find_class_by_name("ABC")
+    assert_kind_of(FastRI::RIIndex::ClassEntry, class_entry)
+    assert_equal("ABC", class_entry.full_name)
+    assert_nil(class_entry.source_index)
+    assert_equal(0, class_entry.index)
+    class_entry = nil
+    @index.find_class_by_name("ABC::DEF::Foo")
+    assert_kind_of(FastRI::RIIndex::ClassEntry, class_entry)
+    assert_equal("ABC::DEF::Foo", class_entry.full_name)
+    assert_nil(class_entry.source_index)
+    assert_equal(2, class_entry.index)
+    class_entry = nil
+    @index.find_class_by_name("ABC::DEF::Foo", 1)
+    assert_kind_of(FastRI::RIIndex::ClassEntry, class_entry)
+    assert_equal("ABC::DEF::Foo", class_entry.full_name)
+    assert_equal(1, class_entry.source_index)
+    assert_equal(2, class_entry.index)
+    class_entry = nil
+    @index.find_class_by_name("ABC::DEF::Foo", 0)
+    assert_nil(class_entry)
+    @index.find_class_by_name("AB", nil)
+    assert_nil(class_entry)
+  end
+
+  def test_find_method_by_name
+    method_entry = nil
+    class << @index; self end.module_eval do
+      define_method(:get_method){|x| method_entry = x}
+    end
+    @index.find_method_by_name("ABC")
+    assert_nil(method_entry)
+    @index.find_method_by_name("ABC::DEF.bar")
+    assert_equal("ABC::DEF.bar", method_entry.full_name)
+    method_entry = nil
+    @index.find_method_by_name("ABC::DEF::Foo#baz")
+    assert_equal("ABC::DEF::Foo#baz", method_entry.full_name)
+    assert_nil(method_entry.source_index)
+    assert_equal(1, method_entry.index)
+    method_entry = nil
+    @index.find_method_by_name("ABC::DEF::Foo#baz", 1)
+    assert_equal("ABC::DEF::Foo#baz", method_entry.full_name)
+    assert_equal(1, method_entry.source_index)
+    assert_equal(1, method_entry.index)
+    method_entry = nil
+    @index.find_method_by_name("CDE.foo", 2)
+    assert_equal("CDE.foo", method_entry.full_name)
+    assert_equal(5, method_entry.index)
+    assert_equal(2, method_entry.source_index)
+    method_entry = nil
+    @index.find_method_by_name("ABC::DEF::Foo#ba", 1)
+    assert_nil(method_entry)
+    @index.find_method_by_name("ABC::DEF.bar", 1)
+    assert_nil(method_entry)
+  end
+
+  def test_find_methods
+    toplevel = @index.top_level_namespace
+    assert_equal(["ABC::DEF::Foo#baz", "ABC::DEF::Foo#foo", 
+                  "ABC::Zzz#foo", "FGH::Adfdsf#foo"], 
+                 @index.find_methods("", false, toplevel).map{|x| x.full_name})
+    assert_equal(["ABC::DEF.bar", "ABC::Zzz.foo", "CDE.foo"], 
+                 @index.find_methods("", true, toplevel).map{|x| x.full_name})
+    assert_equal([], @index.find_methods("ABC", true, toplevel).map{|x| x.full_name})
+    assert_equal(["ABC::DEF::Foo#foo", "ABC::Zzz#foo", "FGH::Adfdsf#foo"], 
+                 @index.find_methods("foo", false, toplevel).map{|x| x.full_name})
+    assert_equal(["ABC::Zzz.foo", "CDE.foo"], 
+                 @index.find_methods("foo", true, toplevel).map{|x| x.full_name})
+    toplevel = @index.top_level_namespace(1)
+    assert_equal(["ABC::DEF::Foo#foo"], @index.find_methods("foo", false, toplevel).map{|x| x.full_name})
+    toplevel = @index.top_level_namespace("stuff-1.1.0")
+    assert_equal(["CDE.foo"], @index.find_methods("foo", true, toplevel).map{|x| x.full_name})
+  end
+
   def test_classentry_contained_modules_matching
     toplevel = @index.top_level_namespace[0]
     assert_equal(["ABC"], toplevel.contained_modules_matching("ABC").map{|x| x.full_name})
