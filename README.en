@@ -11,7 +11,6 @@ Install
 =======
 Just run  
   setup.rb
-or copy the executables in bin/ to some directory in your PATH.
 
 Usage
 =====
