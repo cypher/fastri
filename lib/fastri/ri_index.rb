@@ -319,12 +319,12 @@ class RIIndex
 
   # Return the names of all classes and modules.
   def full_class_names(scope = nil)
-    entries(@namespace_array, scope)
+    all_entries(@namespace_array, scope)
   end
 
   # Return the names of all methods.
   def full_method_names(scope = nil)
-    entries(@method_array, scope)
+    all_entries(@method_array, scope)
   end
 
   # Return a list of all classes, modules, and methods.
@@ -420,10 +420,10 @@ class RIIndex
     @method_array[index][/\S+ (.*)/,1].split(/\s+/).map{|x| x.to_i}
   end
 
-  def entries(array, scope)
+  def all_entries(array, scope)
     if scope
       wanted_sidx = scope_to_sindex(scope)
-      chosen = array.select{|x| x[/ (.*)/, 1].map{|x| x.to_i}.include? wanted_sidx }
+      chosen = array.select{|x| x[/ (.*$)/, 1].split(/\s+/).map{|x| x.to_i}.include? wanted_sidx }
     else
       chosen = array
     end

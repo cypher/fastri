@@ -48,6 +48,46 @@ EOF
     assert_kind_of(FastRI::RIIndex::TopLevelEntry, ret[0])
   end
 
+  def test_full_class_names
+    assert_equal(["ABC", "ABC::DEF", "ABC::DEF::Foo", "ABC::Zzz", "CDE", "FGH", "FGH::Adfdsf"], @index.full_class_names)
+    assert_equal(["ABC", "ABC::DEF", "ABC::Zzz"], @index.full_class_names(0))
+    assert_equal(["ABC", "ABC::DEF", "ABC::DEF::Foo", "CDE"], @index.full_class_names(1))
+    assert_equal(["CDE", "FGH", "FGH::Adfdsf"], @index.full_class_names(2))
+    assert_equal(["CDE", "FGH", "FGH::Adfdsf"], @index.full_class_names("stuff-1.1.0"))
+    assert_equal([], @index.full_class_names("nonexistent-1.1.0"))
+  end
+
+  def test_full_method_names
+    assert_equal(["ABC::DEF.bar", "ABC::DEF::Foo#baz", "ABC::DEF::Foo#foo", 
+                 "ABC::Zzz.foo", "ABC::Zzz#foo", "CDE.foo", "FGH::Adfdsf#foo"], 
+                 @index.full_method_names)
+    assert_equal(["ABC::DEF.bar", "ABC::Zzz.foo", "ABC::Zzz#foo"], 
+                 @index.full_method_names(0))
+    assert_equal(["ABC::DEF::Foo#baz", "ABC::DEF::Foo#foo", "ABC::Zzz.foo", "CDE.foo"], 
+                 @index.full_method_names(1))
+    assert_equal(["CDE.foo", "FGH::Adfdsf#foo"], @index.full_method_names(2))
+    assert_equal(["CDE.foo", "FGH::Adfdsf#foo"], @index.full_method_names("stuff-1.1.0"))
+    assert_equal([], @index.full_method_names("nonexistent-1.1.0"))
+  end
+
+  def test_all_names
+    assert_equal(["ABC", "ABC::DEF", "ABC::DEF::Foo", "ABC::Zzz", "CDE", "FGH", 
+                 "FGH::Adfdsf", "ABC::DEF.bar", "ABC::DEF::Foo#baz", 
+                 "ABC::DEF::Foo#foo", "ABC::Zzz.foo", "ABC::Zzz#foo", 
+                 "CDE.foo", "FGH::Adfdsf#foo"], @index.all_names)
+    assert_equal(["ABC", "ABC::DEF", "ABC::Zzz", "ABC::DEF.bar", 
+                 "ABC::Zzz.foo", "ABC::Zzz#foo"], @index.all_names(0))
+    assert_equal(["ABC", "ABC::DEF", "ABC::DEF::Foo", "CDE", 
+                 "ABC::DEF::Foo#baz", "ABC::DEF::Foo#foo", "ABC::Zzz.foo",
+                 "CDE.foo"], @index.all_names(1))
+    assert_equal(["CDE", "FGH", "FGH::Adfdsf", "CDE.foo", "FGH::Adfdsf#foo"],
+                 @index.all_names(2))
+    assert_equal(["ABC", "ABC::DEF", "ABC::DEF::Foo", "CDE", 
+                 "ABC::DEF::Foo#baz", "ABC::DEF::Foo#foo", "ABC::Zzz.foo",
+                 "CDE.foo"], @index.all_names("somegem-0.1.0"))
+    assert_equal([], @index.all_names("notinstalled-1.0"))
+  end
+
   def test_namespaces_under
     assert_kind_of(Array, @index.namespaces_under("ABC", true, nil))
     results = @index.namespaces_under("ABC", true, nil)
