@@ -76,14 +76,31 @@ class IndexBuilder
   end
 end
 
+def linearize(comment)
+  case s = comment["body"]
+  when String; s
+  else 
+    if Array === (y = comment["contents"])
+      y.map{|z| linearize(z)}.join("\n")
+    elsif s = comment["text"]
+      s
+    else
+      nil
+    end
+  end
+end
+
 require 'rdoc/ri/ri_paths'
 require 'yaml'
+
 paths = RI::Paths::PATH
+#paths = [ RI::Paths::SYSDIR, RI::Paths::SITEDIR, RI::Paths::HOMEDIR ].find_all do |p|
+#  p && File.directory?(p)
+#end
 indexer = IndexBuilder.new("test_FULLTEXT", "test_INDEX")
 bad = 0
 paths.each do |path|
   Dir["#{path}/**/*.yaml"].each do |yamlfile|
-    #puts yamlfile
     yaml = File.read(yamlfile)
     begin
       data = YAML.load(yaml.gsub(/ \!.*/, ''))
@@ -94,8 +111,22 @@ paths.each do |path|
       #puts yaml
       next
     end
-    desc = (data['comment']||[]).map { |x| x.values }.flatten.join("\n").
-           gsub(/&quot;/, "'").gsub(/&lt;/, "<").gsub(/&gt;/, ">").gsub(/&amp;/, "&")
+
+    desc = (data['comment']||[]).map{|x| linearize(x)}.join("\n")
+    desc.gsub!(/<\/?(em|b|tt|ul|ol|table)>/, "")
+    desc.gsub!(/&quot;/, "'")
+    desc.gsub!(/&lt;/, "<")
+    desc.gsub!(/&gt;/, ">")
+    desc.gsub!(/&amp;/, "&")
+=begin
+    puts "=" * 80
+    puts yamlfile
+    puts "-" * 80
+    puts yaml
+    puts "-" * 80
+    puts desc
+    $stdin.gets
+=end
     unless desc.empty?
       indexer.add_document(yamlfile, desc) 
     end
