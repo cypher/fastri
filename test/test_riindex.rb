@@ -258,5 +258,9 @@ EOF
   def test_classentry_contained_modules_matching
     toplevel = @index.top_level_namespace[0]
     assert_equal(["ABC"], toplevel.contained_modules_matching("ABC").map{|x| x.full_name})
+
+    class_entry = @index.get_class_entry("ABC")
+    assert_equal([], class_entry.contained_modules_matching("ABC").map{|x| x.full_name})
+    assert_equal(["ABC::DEF", "ABC::Zzz"], class_entry.contained_modules_matching("").map{|x| x.full_name})
   end
 end

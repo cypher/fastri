@@ -112,7 +112,7 @@ class RIIndex
     # Returns nested classes and modules matching name (non-recursive).
     def contained_modules_matching(name)
       @ri_index.namespaces_under(self, false, @source_index).select do |x|
-        x.full_name[name]
+        x.name[name]
       end
     end
 
@@ -253,6 +253,7 @@ class RIIndex
     anIO.puts @method_array
     anIO.puts "=" * 80
   end
+#{{{ RiReader compatibility interface
 
   # Returns an array with the top level namespace.
   def top_level_namespace(scope = nil)
