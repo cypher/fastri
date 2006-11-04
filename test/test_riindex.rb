@@ -7,9 +7,9 @@ class Test_RIIndex < Test::Unit::TestCase
   INDEX_DATA =<<EOF
 #{FastRI::RIIndex::MAGIC}
 Sources:
-  /usr/share/ri/system/    system
-  /long/path/somegem-0.1.0 somegem-0.1.0
-  /long/path/stuff-1.1.0   stuff-1.1.0
+system                          /usr/share/ri/system/
+somegem-0.1.0                   /long/path/somegem-0.1.0
+stuff-1.1.0                     /long/path/stuff-1.1.0
 ================================================================================
 Namespaces:
 ABC 0 1
@@ -34,6 +34,12 @@ EOF
   require 'stringio'
   def setup
     @index = FastRI::RIIndex.new_from_IO(StringIO.new(INDEX_DATA))
+  end
+
+  def test_dump
+    s = StringIO.new("")
+    @index.dump(s)
+    assert_equal(INDEX_DATA, s.string)
   end
 
   def test_toplevel_namespace

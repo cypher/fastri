@@ -220,7 +220,7 @@ class RIIndex
     paths     = []
     gem_names = []
     until (line = anIO.gets).index("=" * 80) == 0
-      path, gemname = line.strip.split(/\s+/)
+      gemname, path = line.strip.split(/\s+/)
       paths     << path
       gem_names << gemname
     end
