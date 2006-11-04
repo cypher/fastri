@@ -48,7 +48,7 @@ end
 puts "Building index."
 t0 = Time.new
 #ri_reader = RI::RiReader.new(RI::RiCache.new(paths))
-ri_reader = FastRI::RIIndex.new(paths)
+ri_reader = FastRI::RIIndex.new_from_paths(paths)
 puts "Needed #{Time.new - t0} seconds"
 
 service = FastRI::RIService.new(ri_reader)

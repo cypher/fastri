@@ -3,9 +3,9 @@ $:.unshift File.join(File.dirname(__FILE__), "..", "lib")
 require 'fastri/ri_service'
 require 'fastri/ri_index'
 
-class Test_RIService < Test::Unit::TestCase
+class Test_RIService_Functional < Test::Unit::TestCase
   # only created once, since it takes a long time
-  @@ri = FastRI::RIService.new(FastRI::RIIndex.new(RI::Paths::PATH))
+  @@ri = FastRI::RIService.new(FastRI::RIIndex.new_from_paths(RI::Paths::PATH))
   def setup
     @ri = @@ri
   end
