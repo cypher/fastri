@@ -88,6 +88,23 @@ EOF
     assert_equal([], @index.all_names("notinstalled-1.0"))
   end
 
+  def test_get_class_entry
+    assert_equal("ABC", @index.get_class_entry("ABC", nil).full_name)
+    assert_nil(@index.get_class_entry("ABC", nil).source_index)
+    assert_nil(@index.get_class_entry("ABC::DEF::Foo", 0))
+    assert_equal(1, @index.get_class_entry("ABC::DEF::Foo", 1).source_index)
+    assert_equal(2, @index.get_class_entry("ABC::DEF::Foo", 1).index)
+  end
+
+  def test_get_method_entry
+    assert_equal("ABC::DEF.bar", @index.get_method_entry("ABC::DEF.bar", nil).full_name)
+    assert_equal(0, @index.get_method_entry("ABC::DEF.bar", 0).source_index)
+    assert_nil(@index.get_method_entry("FGH::Adfdsf#foo", 1))
+    assert_equal(6, @index.get_method_entry("FGH::Adfdsf#foo", 2).index)
+    assert_equal(2, @index.get_method_entry("FGH::Adfdsf#foo", 2).source_index)
+    assert_equal("FGH::Adfdsf#foo", @index.get_method_entry("FGH::Adfdsf#foo", 2).full_name)
+  end
+
   def test_namespaces_under
     assert_kind_of(Array, @index.namespaces_under("ABC", true, nil))
     results = @index.namespaces_under("ABC", true, nil)

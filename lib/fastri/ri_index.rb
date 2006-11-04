@@ -332,6 +332,22 @@ class RIIndex
     full_class_names(scope).concat(full_method_names(scope))
   end
 
+#{{{ New (faster) interface
+
+  # Returns the ClassEntry associated to the given +full_name+.
+  def get_class_entry(full_name, scope = nil)
+    entry = get_entry(@namespace_array, full_name, ClassEntry, scope)
+    return nil unless entry && entry.full_name == full_name
+    entry
+  end
+  
+  # Returns the MethodEntry associated to the given +full_name+.
+  def get_method_entry(full_name, scope = nil)
+    entry = get_entry(@method_array, full_name, MethodEntry, scope)
+    return nil unless entry && entry.full_name == full_name
+    entry
+  end
+
   # Returns array of ClassEntry objects under class_entry_or_name
   # (either String or ClassEntry) in the hierarchy.
   def namespaces_under(class_entry_or_name, recursive, scope = nil)
