@@ -7,11 +7,36 @@ require 'fastri/ri_index'
 require 'fastri/ri_service'
 
 FASTRI_SERVER_VERSION = "0.0.1"
+
+def make_index(index_file)
+  # The local environment is trusted --- what we don't trust is what would come
+  # from the DRb connection. This way the RIService will be untainted, and we
+  # will be able to use it with $SAFE = 1.
+  ObjectSpace.each_object{|obj| obj.untaint unless obj.frozen? }
+
+  paths = [ RI::Paths::SYSDIR, RI::Paths::SITEDIR, RI::Paths::HOMEDIR ].find_all do |p|
+    p && File.directory?(p)
+  end
+  begin
+    require 'rubygems'
+    paths.concat Dir["#{Gem.path}/doc/*/ri"]
+  rescue LoadError
+  end 
+
+  puts "Building index."
+  t0 = Time.new
+  #ri_reader = RI::RiReader.new(RI::RiCache.new(paths))
+  ri_reader = FastRI::RIIndex.new_from_paths(paths)
+  open(index_file, "w"){|io| Marshal.dump ri_reader, io}
+  puts "Needed #{Time.new - t0} seconds"
+end
+
 #{{{ Main program
 
 require 'optparse'
 
-options = {:allowed_hosts => ["127.0.0.1"], :addr => "127.0.0.1"}
+options = {:allowed_hosts => ["127.0.0.1"], :addr => "127.0.0.1",
+  :index_file => File.expand_path("~/.fastri-index")}
 OptionParser.new do |opts|
   opts.banner = "Usage: fastri-server.rb [options]"
 
@@ -25,31 +50,27 @@ OptionParser.new do |opts|
     options[:addr] = addr
   end
 
+  opts.on("--index-file=FILE", "Use index file.",
+          "(default: #{options[:index_file]})") do |file|
+    options[:index_file] = file
+  end
+
+  opts.on("-b", "--rebuild-index", "Only rebuild index.") do 
+    make_index(options[:index_file])
+    exit 0
+  end
+
   opts.on("-h", "--help", "Show this help message") do 
     puts opts
     exit
   end
 end.parse!
 
-# The local environment is trusted --- what we don't trust is what would come
-# from the DRb connection. This way the RIService will be untainted, and we
-# will be able to use it with $SAFE = 1.
-ObjectSpace.each_object{|obj| obj.untaint unless obj.frozen? }
-
-paths = [ RI::Paths::SYSDIR, RI::Paths::SITEDIR, RI::Paths::HOMEDIR ].find_all do |p|
-  p && File.directory?(p)
+if File.exist?(options[:index_file])
+  ri_reader = open(options[:index_file]){|io| Marshal.load io }
+else
+  ri_reader = make_index(options[:index_file])
 end
-begin
-  require 'rubygems'
-  paths.concat Dir["#{Gem.path}/doc/*/ri"]
-rescue LoadError
-end 
-
-puts "Building index."
-t0 = Time.new
-#ri_reader = RI::RiReader.new(RI::RiCache.new(paths))
-ri_reader = FastRI::RIIndex.new_from_paths(paths)
-puts "Needed #{Time.new - t0} seconds"
 
 service = FastRI::RIService.new(ri_reader)
 GC.start
