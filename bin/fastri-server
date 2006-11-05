@@ -27,7 +27,7 @@ def make_index(index_file)
   t0 = Time.new
   #ri_reader = RI::RiReader.new(RI::RiCache.new(paths))
   ri_reader = FastRI::RIIndex.new_from_paths(paths)
-  open(index_file, "w"){|io| Marshal.dump ri_reader, io}
+  open(index_file, "wb"){|io| Marshal.dump ri_reader, io}
   puts "Needed #{Time.new - t0} seconds"
 end
 
@@ -67,7 +67,7 @@ OptionParser.new do |opts|
 end.parse!
 
 if File.exist?(options[:index_file])
-  ri_reader = open(options[:index_file]){|io| Marshal.load io }
+  ri_reader = open(options[:index_file], "rb"){|io| Marshal.load io }
 else
   ri_reader = make_index(options[:index_file])
 end
