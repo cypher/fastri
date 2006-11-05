@@ -90,7 +90,6 @@ class RIService
 
   def lookup_keyword(keyw)
     ret = QueryData.new
-    keyw.sub!(/\./, '::')
     begin
       ret.desc = NameDescriptor.new(keyw)
     rescue RiError => e
