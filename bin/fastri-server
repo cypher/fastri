@@ -10,7 +10,7 @@ FASTRI_SERVER_VERSION = "0.0.1"
 
 def make_index(index_file)
   # The local environment is trusted --- what we don't trust is what would come
-  # from the DRb connection. This way the RIService will be untainted, and we
+  # from the DRb connection. This way the RiService will be untainted, and we
   # will be able to use it with $SAFE = 1.
   ObjectSpace.each_object{|obj| obj.untaint unless obj.frozen? }
 
@@ -26,7 +26,7 @@ def make_index(index_file)
   puts "Building index."
   t0 = Time.new
   #ri_reader = RI::RiReader.new(RI::RiCache.new(paths))
-  ri_reader = FastRI::RIIndex.new_from_paths(paths)
+  ri_reader = FastRI::RiIndex.new_from_paths(paths)
   open(index_file, "wb"){|io| Marshal.dump ri_reader, io}
   puts "Needed #{Time.new - t0} seconds"
 end
@@ -72,14 +72,14 @@ else
   ri_reader = make_index(options[:index_file])
 end
 
-service = FastRI::RIService.new(ri_reader)
+service = FastRI::RiService.new(ri_reader)
 GC.start
 
 require 'rinda/ring'
 require 'rinda/tuplespace'
 require 'drb/acl'
 
-class FastRI::RIService
+class FastRI::RiService
   include DRbUndumped
 end
 

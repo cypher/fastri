@@ -80,7 +80,7 @@ class RedirectedTextFormatter < RI::TextFormatter
   include FormatterRedirection
 end
 
-class RIService
+class RiService
   Options = Struct.new(:formatter, :use_stdout, :width)
   QueryData = Struct.new(:desc, :namespaces, :methods)
 

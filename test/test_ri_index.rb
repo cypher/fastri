@@ -3,9 +3,9 @@ $:.unshift File.join(File.dirname(__FILE__), "..", "lib")
 $:.unshift "lib"
 require 'fastri/ri_index'
 
-class Test_RIIndex < Test::Unit::TestCase
+class TestRiIndex < Test::Unit::TestCase
   INDEX_DATA =<<EOF
-#{FastRI::RIIndex::MAGIC}
+#{FastRI::RiIndex::MAGIC}
 Sources:
 system                          /usr/share/ri/system/
 somegem-0.1.0                   /long/path/somegem-0.1.0
@@ -33,7 +33,7 @@ EOF
 
   require 'stringio'
   def setup
-    @index = FastRI::RIIndex.new_from_IO(StringIO.new(INDEX_DATA))
+    @index = FastRI::RiIndex.new_from_IO(StringIO.new(INDEX_DATA))
   end
 
   def test_dump
@@ -45,7 +45,7 @@ EOF
   def test_toplevel_namespace
     ret = @index.top_level_namespace
     assert_kind_of(Array, ret)
-    assert_kind_of(FastRI::RIIndex::TopLevelEntry, ret[0])
+    assert_kind_of(FastRI::RiIndex::TopLevelEntry, ret[0])
   end
 
   def test_full_class_names
@@ -183,19 +183,19 @@ EOF
       define_method(:get_class){|x| class_entry = x}
     end
     @index.find_class_by_name("ABC")
-    assert_kind_of(FastRI::RIIndex::ClassEntry, class_entry)
+    assert_kind_of(FastRI::RiIndex::ClassEntry, class_entry)
     assert_equal("ABC", class_entry.full_name)
     assert_nil(class_entry.source_index)
     assert_equal(0, class_entry.index)
     class_entry = nil
     @index.find_class_by_name("ABC::DEF::Foo")
-    assert_kind_of(FastRI::RIIndex::ClassEntry, class_entry)
+    assert_kind_of(FastRI::RiIndex::ClassEntry, class_entry)
     assert_equal("ABC::DEF::Foo", class_entry.full_name)
     assert_nil(class_entry.source_index)
     assert_equal(2, class_entry.index)
     class_entry = nil
     @index.find_class_by_name("ABC::DEF::Foo", 1)
-    assert_kind_of(FastRI::RIIndex::ClassEntry, class_entry)
+    assert_kind_of(FastRI::RiIndex::ClassEntry, class_entry)
     assert_equal("ABC::DEF::Foo", class_entry.full_name)
     assert_equal(1, class_entry.source_index)
     assert_equal(2, class_entry.index)
@@ -264,3 +264,4 @@ EOF
     assert_equal(["ABC::DEF", "ABC::Zzz"], class_entry.contained_modules_matching("").map{|x| x.full_name})
   end
 end
+

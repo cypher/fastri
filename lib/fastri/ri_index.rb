@@ -21,9 +21,9 @@ module FastRI
 # indexes the source in #paths, or a name identifying the source (either
 # "system" or a package name).  If <tt>scope == nil</tt>, the information from
 # all sources is merged.
-class RIIndex 
+class RiIndex 
   # Redefine RI::MethodEntry#full_name to use the following notation:
-  # Namespace::Foo.singleton_method (instead of ::). RIIndex depends on this to
+  # Namespace::Foo.singleton_method (instead of ::). RiIndex depends on this to
   # tell singleton methods apart.
   class ::RI::MethodEntry # :nodoc:
     remove_method :full_name

@@ -10,14 +10,14 @@ end
 require 'rcov/rcovtask'
 desc "Run rcov."
 Rcov::RcovTask.new do |t|
-  t.test_files = FileList['test/test_*.rb'].to_a.reject{|x| /functional\.rb$/ =~ x}
+  t.test_files = FileList['test/test_*.rb'].to_a.reject{|x| /test_functional/ =~ x}
   t.verbose = true
 end
 
 desc "Save current coverage state for later comparisons."
 Rcov::RcovTask.new(:rcovsave) do |t|
   t.rcov_opts << "--save"
-  t.test_files = FileList['test/test_*.rb'].to_a.reject{|x| /functional\.rb$/ =~ x}
+  t.test_files = FileList['test/test_*.rb'].to_a.reject{|x| /test_functional/ =~ x}
   t.verbose = true
 end
 
