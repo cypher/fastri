@@ -23,6 +23,8 @@ require 'rdoc/ri/ri_util'
 require 'rdoc/ri/ri_formatter'
 require 'rdoc/ri/ri_display'
 
+require 'fastri/ri_index.rb'
+
 module FastRI
 
 class ::DefaultDisplay
@@ -222,23 +224,33 @@ class RiService
   end
 
   def info(keyw, type = :ansi)
-    return nil unless (qdata = lookup_keyword(keyw))
+    return nil if keyw.strip.empty?
+    descriptor = NameDescriptor.new(keyw)
+    entries = obtain_entries(descriptor, true)
 
-    if qdata.methods.nil?
-      qdata.namespaces = qdata.namespaces.find_all { |n| n.full_name == qdata.desc.full_class_name }
-      return nil if qdata.namespaces.empty?
-      klass = @ri_reader.get_class(qdata.namespaces[0])
-      capture_stdout(display(type)) do |display|
-        display.display_class_info(klass, @ri_reader)
+    case entries.size
+    when 0; nil
+    when 1
+      case entries[0]    #FIXME: should be done by the entry itself
+      when RiIndex::ClassEntry
+        capture_stdout(display(type)) do |display|
+          display.display_class_info(@ri_reader.get_class(entries[0]), @ri_reader)
+        end
+      when RiIndex::MethodEntry
+        capture_stdout(display(type)) do |display|
+          display.display_method_info(@ri_reader.get_method(entries[0]))
+        end
       end
     else
-      qdata.methods = qdata.methods.find_all { |m| m.name == qdata.desc.method_name }
-      return nil if qdata.methods.empty?
-      meth = @ri_reader.get_method(qdata.methods[0])
       capture_stdout(display(type)) do |display|
-        display.display_method_info(meth)
+        formatter = display.formatter
+        formatter.draw_line("Multiple choices:")
+        formatter.blankline
+        formatter.wrap(entries.map{|x| x.full_name}.join(", "))
       end
     end
+  rescue RiError
+    return nil
   end
 
   def args(keyw, type = :ansi)
