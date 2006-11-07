@@ -39,7 +39,7 @@ class ::DefaultDisplay
 end
 
 class StringRedirectedDisplay < ::DefaultDisplay
-  attr_reader :stringio
+  attr_reader :stringio, :formatter
   def initialize(*args)
     super(*args)
     reset_stringio
