@@ -29,6 +29,7 @@ def make_index(index_file)
   ri_reader = FastRI::RiIndex.new_from_paths(paths)
   open(index_file, "wb"){|io| Marshal.dump ri_reader, io}
   puts "Needed #{Time.new - t0} seconds"
+  ri_reader
 end
 
 #{{{ Main program
