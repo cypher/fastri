@@ -88,6 +88,54 @@ class RiService
     @ri_reader = ri_reader
   end
 
+  def obtain_entries(descriptor, try_partial = true)
+    if descriptor.class_names.empty?
+      meths = @ri_reader.methods_under_matching("", /(#|\.)#{descriptor.method_name}$/, true)
+      return meths unless meths.empty?
+      return [] unless try_partial
+      # try with partial matches: foo -> foobar, foobaz    anywhere in the
+      # hierarchy
+      meths = @ri_reader.methods_under_matching("", /(#|\.)#{descriptor.method_name}/, true)
+      return meths
+    end
+
+    # if we're here, some namespace was given
+    full_ns_name = descriptor.class_names.join("::")
+    if descriptor.method_name == nil
+      ns = @ri_reader.get_class_entry(full_ns_name)
+      return [ns] if ns
+      # nested namespace
+      namespaces = @ri_reader.namespaces_under_matching("", /::#{full_ns_name}$/, true)
+      return namespaces unless namespaces.empty?
+      return [] unless try_partial
+      # partial match
+      namespaces = @ri_reader.namespaces_under_matching("", /^#{full_ns_name}/, false)
+      return namespaces unless namespaces.empty?
+      # partial and nested
+      namespaces = @ri_reader.namespaces_under_matching("", /::#{full_ns_name}[^:]*$/, true)
+      return namespaces
+    else  # both namespace and method
+      seps = separators(descriptor.is_class_method)
+      seps.each do |sep|
+        entry = @ri_reader.get_method_entry("#{full_ns_name}#{sep}#{descriptor.method_name}")
+        return [entry] if entry
+      end
+      # no exact matches
+      sep_re = "(" + seps.map{|x| Regexp.escape(x)}.join("|") + ")"
+      # nested
+      methods = @ri_reader.methods_under_matching("", /::#{full_ns_name}#{sep_re}#{descriptor.method_name}$/, true)
+      return methods unless methods.empty?
+
+      return [] unless try_partial
+      # partial
+      methods = @ri_reader.methods_under_matching(full_ns_name, /#{sep_re}#{descriptor.method_name}/, false)
+      return methods unless methods.empty?
+      # partial and nested
+      methods = @ri_reader.methods_under_matching("", /::#{full_ns_name}#{sep_re}#{descriptor.method_name}/, true)
+      return methods
+    end
+  end
+
   def lookup_keyword(keyw)
     ret = QueryData.new
     begin
@@ -137,15 +185,40 @@ class RiService
   def completion_list(keyw)
     return @ri_reader.full_class_names if keyw == ""
 
-    return nil unless (qdata = lookup_keyword(keyw))
-
-    if qdata.methods.nil?
-      return qdata.namespaces.map{ |n| n.full_name }
-    elsif qdata.desc.class_names.empty?
-      return qdata.methods.map { |m| m.name }.uniq
-    else
-      return qdata.methods.map { |m| m.full_name }
+    descriptor = NameDescriptor.new(keyw)
+  
+    if descriptor.class_names.empty?
+      # try partial matches
+      meths = @ri_reader.methods_under_matching("", /(#|\.)#{descriptor.method_name}/, true)
+      ret = meths.map{|x| x.name}.uniq.sort
+      return ret.empty? ? nil : ret
     end
+
+    # if we're here, some namespace was given
+    full_ns_name = descriptor.class_names.join("::")
+    if descriptor.method_name == nil && ! [?#, ?:, ?.].include?(keyw[-1])
+      # partial match
+      namespaces = @ri_reader.namespaces_under_matching("", /^#{full_ns_name}/, false)
+      ret = namespaces.map{|x| x.full_name}.uniq.sort
+      return ret.empty? ? nil : ret
+    else
+      if [?#, ?:, ?.].include?(keyw[-1])
+        seps = case keyw[-1]
+          when ?#; %w[#]
+          when ?:; %w[.]
+          when ?.; %w[. #]
+        end
+      else  # both namespace and method
+        seps = separators(descriptor.is_class_method)
+      end
+      sep_re = "(" + seps.map{|x| Regexp.escape(x)}.join("|") + ")"
+      # partial
+      methods = @ri_reader.methods_under_matching(full_ns_name, /#{sep_re}#{descriptor.method_name}/, false)
+      ret = methods.map{|x| x.full_name}.uniq.sort
+      return ret.empty? ? nil : ret
+    end
+  rescue RiError
+    return nil
   end
 
   def info(keyw, type = :ansi)
@@ -203,6 +276,14 @@ class RiService
   end
 
   private
+
+  def separators(is_class_method)
+    case is_class_method
+    when true;  ["."]
+    when false; ["#"]
+    when nil;   [".","#"]
+    end
+  end
   def display(type)
     options = Options.new
     options.use_stdout = true
