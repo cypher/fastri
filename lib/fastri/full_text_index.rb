@@ -80,17 +80,20 @@ class FullTextIndex
     end
   end
 
-  def next_match(result, term_or_regexp)
+  def next_match(result, term_or_regexp = "")
     case term_or_regexp
     when String;  size = [result.query.size, term_or_regexp.size].max
     when Regexp;  size = MAX_REGEXP_MATCH_SIZE
     end
     get_fulltext_IO do |fulltextIO|
       get_sarray_IO do |sarrayIO|
+        idx = result.index
         loop do
-          idx = result.index + 1
+          idx += 1
           str = get_string(sarrayIO, fulltextIO, idx, size)
-          break unless str.index(result.term) == 0
+          upto = str.index("<<<<")
+          str = str[0, upto] if upto
+          break unless str.index(result.query) == 0
           if str[term_or_regexp]
             fulltextIO.pos = index_to_offset(sarrayIO, idx)
             path = find_path(fulltextIO)
@@ -101,7 +104,7 @@ class FullTextIndex
     end
   end
 
-  def next_matches(result, term_or_regexp)
+  def next_matches(result, term_or_regexp = "")
     case term_or_regexp
     when String;  size = [result.query.size, term_or_regexp.size].max
     when Regexp;  size = MAX_REGEXP_MATCH_SIZE
@@ -113,6 +116,8 @@ class FullTextIndex
         loop do
           idx += 1
           str = get_string(sarrayIO, fulltextIO, idx, size)
+          upto = str.index("<<<<")
+          str = str[0, upto] if upto
           break unless str.index(result.query) == 0
           if str[term_or_regexp]
             fulltextIO.pos = index_to_offset(sarrayIO, idx)
@@ -144,7 +149,7 @@ class FullTextIndex
           str[0..to]
         else
           str  = get_string(sarrayIO, fulltextIO, index, size + 8, offset - 4)
-          from = (str.index(">>>>", -offset) || 1) + 4
+          from = (str.rindex(">>>>", -offset) || 0) + 4
           to   = (str.index("<<<<", -offset) || -4) - 1
           str[from..to]
         end
