@@ -352,9 +352,18 @@ class RiIndex
   # Returns array of ClassEntry objects under class_entry_or_name
   # (either String or ClassEntry) in the hierarchy.
   def namespaces_under(class_entry_or_name, recursive, scope = nil)
+    namespaces_under_matching(class_entry_or_name, //, recursive, scope)
+  end
+
+  # Returns array of ClassEntry objects under class_entry_or_name (either
+  # String or ClassEntry) in the hierarchy whose +full_name+ matches the given
+  # regexp.
+  def namespaces_under_matching(class_entry_or_name, regexp, recursive, scope = nil)
     case class_entry_or_name
     when ClassEntry
       class_entry = class_entry_or_name
+    when ""
+      class_entry = top_level_namespace(scope)[0]
     else
       class_entry = get_entry(@namespace_array, class_entry_or_name, ClassEntry, scope)
     end
@@ -365,13 +374,15 @@ class RiIndex
       entry = @namespace_array[i]
       break unless re1 =~ entry
       next if !recursive && re2 !~ entry 
+      full_name = entry[/\S+/]
+      next unless regexp =~ full_name
       if scope
         sources = namespace_sources(i)
         if sources.include?(sindex = scope_to_sindex(scope))
-          ret << ClassEntry.new(self, entry[/\S+/], i, sindex)
+          ret << ClassEntry.new(self, full_name, i, sindex)
         end
       else
-        ret << ClassEntry.new(self, entry[/\S+/], i, nil)
+        ret << ClassEntry.new(self, full_name, i, nil)
       end
     end
     ret
@@ -380,6 +391,13 @@ class RiIndex
   # Returns array of MethodEntry objects under class_entry_or_name
   # (either String or ClassEntry) in the hierarchy.
   def methods_under(class_entry_or_name, recursive, scope = nil)
+    methods_under_matching(class_entry_or_name, //, recursive, scope)
+  end
+
+  # Returns array of MethodEntry objects under class_entry_or_name (either
+  # String or ClassEntry) in the hierarchy whose +full_name+ matches the given
+  # regexp.
+  def methods_under_matching(class_entry_or_name, regexp, recursive, scope = nil)
     case class_entry_or_name
     when ClassEntry
       full_name = class_entry_or_name.full_name
@@ -394,13 +412,15 @@ class RiIndex
       entry = @method_array[i]
       break unless re1 =~ entry
       next if !recursive && re2 !~ entry 
+      full_name = entry[/\S+/]
+      next unless regexp =~ full_name
       if scope
         sources = method_sources(i)
         if sources.include?(sindex = scope_to_sindex(scope))
-          ret << MethodEntry.new(self, entry[/\S+/], i, sindex)
+          ret << MethodEntry.new(self, full_name, i, sindex)
         end
       else
-        ret << MethodEntry.new(self, entry[/\S+/], i, nil)
+        ret << MethodEntry.new(self, full_name, i, nil)
       end
     end
     ret
