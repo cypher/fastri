@@ -271,25 +271,32 @@ class RiService
     return nil
   end
 
-  # return a list of classes for the method keyw
-  # return nil if keyw has already a class
-  def class_list(keyw, rep='\1')
-    return nil unless (qdata = lookup_keyword(keyw))
-    return nil unless qdata.desc.class_names.empty?
-
-    qdata.methods = qdata.methods.find_all { |m| m.name == qdata.desc.method_name }
-
-    return qdata.methods.map{|m| m.full_name.sub(/(.*)(#|(::)).*/, rep) }.uniq
+  # Returns a list with the names of the modules/classes that define the given
+  # method, or +nil+.
+  def class_list(keyword)
+    _class_list(keyword, '\1')
   end
-
-  # flag means (#|::) 
-  # return a list of classes and flag for the method keyw
-  # return nil if keyw has already a class
-  def class_list_with_flag(keyw)
-    class_list(keyw, '\1\2')
+  
+  # Returns a list with the names of the modules/classes that define the given
+  # method, followed by a flag (#|::), or +nil+.
+  # e.g. ["Array#", "IO#", "IO::", ... ]
+  def class_list_with_flag(keyword)
+    r = _class_list(keyword, '\1\2')
+    r ? r.map{|x| x.gsub(/\./, "::")} : nil
   end
 
   private
+
+  def _class_list(keyword, rep)
+    return nil if keyword.strip.empty?
+    entries = @ri_reader.methods_under_matching("", /#{keyword}$/, true)
+    return nil if entries.empty?
+
+    entries.map{|entry| entry.full_name.sub(/(.*)(#|\.).*/, rep) }.uniq
+  rescue RiError
+    return nil
+  end
+
 
   def separators(is_class_method)
     case is_class_method
