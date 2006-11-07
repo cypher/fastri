@@ -253,20 +253,22 @@ class RiService
     return nil
   end
 
-  def args(keyw, type = :ansi)
-    return nil unless (qdata = lookup_keyword(keyw))
-    return nil unless qdata.desc.class_names.empty?
+  def args(keyword, type = :ansi)
+    return nil if keyword.strip.empty?
+    descriptor = NameDescriptor.new(keyword)
+    entries = obtain_entries(descriptor, false)
+    return nil if entries.empty? || RiIndex::ClassEntry === entries[0]
 
-    qdata.methods = qdata.methods.find_all { |m| m.name == qdata.desc.method_name }
-    return nil if qdata.methods.empty?
     params_text = ""
-    qdata.methods.each do |m|
-      meth = @ri_reader.get_method(m)
+    entries.each do |entry|
+      desc = @ri_reader.get_method(entry)
       params_text << capture_stdout(display(type)) do |display|
-        display.full_params(meth)
+        display.full_params(desc)
       end
     end
     params_text
+  rescue RiError
+    return nil
   end
 
   # return a list of classes for the method keyw
