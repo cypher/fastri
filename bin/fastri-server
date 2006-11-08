@@ -87,10 +87,10 @@ OptionParser.new do |opts|
 end.parse!
 
 if File.exist?(options[:index_file])
-  ri_reader = open(options[:index_file], "rb"){|io| Marshal.load io }
-else
-  ri_reader = make_index(options[:index_file])
+  ri_reader = open(options[:index_file], "rb"){|io| Marshal.load io } rescue nil
 end
+
+ri_reader ||= make_index(options[:index_file])
 
 service = FastRI::RiService.new(ri_reader)
 GC.start
