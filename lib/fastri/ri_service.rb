@@ -1,22 +1,6 @@
-# Based on ri-emacs.rb by Kristof Bastiaensen <kristof@vleeuwen.org>
+# Copyright (C) 2006  Mauricio Fernandez <mfp@acm.org>
 #
-#    Copyright (C) 2004,2006 Kristof Bastiaensen
-#                  2006      Mauricio Fernandez <mfp@acm.org>
-#
-#    This program is free software; you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation; either version 2 of the License, or
-#    (at your option) any later version.
-#
-#    This program is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
-#
-#    You should have received a copy of the GNU General Public License
-#    along with this program; if not, write to the Free Software
-#    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-#----------------------------------------------------------------------
+# Inspired by ri-emacs.rb by Kristof Bastiaensen <kristof@vleeuwen.org>
  
 require 'rdoc/ri/ri_paths'
 require 'rdoc/ri/ri_util'
@@ -84,7 +68,6 @@ end
 
 class RiService
   Options = Struct.new(:formatter, :use_stdout, :width)
-  QueryData = Struct.new(:desc, :namespaces, :methods)
 
   def initialize(ri_reader)
     @ri_reader = ri_reader
@@ -136,52 +119,6 @@ class RiService
       methods = @ri_reader.methods_under_matching("", /::#{full_ns_name}#{sep_re}#{descriptor.method_name}/, true)
       return methods
     end
-  end
-
-  def lookup_keyword(keyw)
-    ret = QueryData.new
-    begin
-      ret.desc = NameDescriptor.new(keyw)
-    rescue RiError => e
-      return nil
-    end
-    ret.namespaces = @ri_reader.top_level_namespace
-
-    container = ret.namespaces
-    for class_name in ret.desc.class_names
-      return nil if container.empty?
-      ret.namespaces = @ri_reader.lookup_namespace_in(class_name, container)
-      container = ret.namespaces.find_all {|m| m.name == class_name}
-    end
-
-    if ret.desc.method_name.nil?
-      if [?., ?:, ?#].include? keyw[-1]
-        ret.namespaces = container
-        is_class_method = case keyw[-1]
-                          when ?.: nil
-                          when ?:: true
-                          when ?#: false
-                          end
-        ret.methods = @ri_reader.find_methods("", is_class_method, container)
-        return nil if ret.methods.empty?
-      else
-        ret.namespaces = ret.namespaces.find_all{ |n| n.name.index(class_name).zero? }
-        return nil if ret.namespaces.empty?
-        ret.methods = nil
-      end
-    else
-      return nil if container.empty?
-      ret.namespaces = container
-      ret.methods = @ri_reader.find_methods(ret.desc.method_name,
-                                            ret.desc.is_class_method,
-                                            container)
-      ret.methods = ret.methods.find_all do |m|
-        m.name.index(ret.desc.method_name).zero?
-      end
-      return nil if ret.methods.empty?
-    end
-
-    ret
   end
 
   def completion_list(keyw)
