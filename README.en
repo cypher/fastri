@@ -1,11 +1,13 @@
 FastRI Copyright (C) 2006  Mauricio Fernandez <mfp@acm.org>
-Originally based on ri-emacs.rb by 
-                 Kristof Bastiaensen <kristof@vleeuwen.org>
+Inspired by ri-emacs.rb by Kristof Bastiaensen <kristof@vleeuwen.org>
 
 Overview
 ========
-FastRI is an alternative to the ri command-line tool. It is *much* faster,
-and also allows you to offer RI lookup services over DRb. 
+FastRI is an alternative to the ri command-line tool. It is *much* faster, and
+also allows you to offer RI lookup services over DRb. FastRI is a bit smarter
+than ri, and can find classes anywhere in the hierarchy without specifying the
+"full path". It also knows about gems, and can tell you e.g. which extensions
+to a core class were added by a specific gem.
 
 Install
 =======
@@ -29,9 +31,9 @@ Quickstart
 Later,
  $ fri String
  ---------------------------------------------------------- Class: String
-      A +String+ object holds and manipulates an arbitrary sequence of
+      A String object holds and manipulates an arbitrary sequence of
       bytes, typically representing characters. String objects may be
-      created using +String::new+ or as literals.
+      created using String::new or as literals.
  ...
 
 Read on for more information, including how to make FastRI work across
@@ -41,8 +43,8 @@ Launching the server
 --------------------
 For local usage, just
   $ fastri-server
-will do. The ring server will listing in 127.0.0.1, and only connections from
-localhost will be allowed. If you want to allow fri to be used from other
+will do. The DRb service will bind to 127.0.0.1, and only connections from
+127.0.0.1 will be allowed. If you want to allow fri to be used from other
 machines, you have to specify which interface to bind to, and allow incoming 
 connections from the desired hosts. For example, if your network is
 192.168.1.0, and your IP is 192.168.1.2, you can do
