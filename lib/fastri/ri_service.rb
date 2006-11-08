@@ -168,12 +168,12 @@ class RiService
     case entries.size
     when 0; nil
     when 1
-      case entries[0]    #FIXME: should be done by the entry itself
-      when RiIndex::ClassEntry
+      case entries[0].type
+      when :namespace
         capture_stdout(display(type)) do |display|
           display.display_class_info(@ri_reader.get_class(entries[0]), @ri_reader)
         end
-      when RiIndex::MethodEntry
+      when :method
         capture_stdout(display(type)) do |display|
           display.display_method_info(@ri_reader.get_method(entries[0]))
         end

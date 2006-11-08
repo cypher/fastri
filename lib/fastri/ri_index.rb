@@ -84,6 +84,11 @@ class RiIndex
     def instance_method?
       !singleton_method?
     end
+
+    # Returns the type of this entry (<tt>:method</tt>).
+    def type
+      :method
+    end
   end
 
   class ClassEntry
@@ -145,6 +150,11 @@ class RiIndex
     # Returns all methods, both instance and singleton (non-recursive).
     def all_method_names
       @ri_index.methods_under(self, false, @source_index).map{|meth| meth.full_name}
+    end
+
+    # Returns the type of this entry (<tt>:namespace</tt>).
+    def type
+      :namespace
     end
   end
 
