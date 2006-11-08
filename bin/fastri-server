@@ -51,12 +51,31 @@ EOF
   ri_reader
 end
 
+# stolen from RubyGems
+def find_home
+  ['HOME', 'USERPROFILE'].each do |homekey|
+    return ENV[homekey] if ENV[homekey]
+  end
+  if ENV['HOMEDRIVE'] && ENV['HOMEPATH']
+    return "#{ENV['HOMEDRIVE']}:#{ENV['HOMEPATH']}"
+  end
+  begin
+    File.expand_path("~")
+  rescue StandardError => ex
+    if File::ALT_SEPARATOR
+      "C:/"
+    else
+      "/"
+    end
+  end
+end
+
 #{{{ Main program
 
 require 'optparse'
 
 options = {:allowed_hosts => ["127.0.0.1"], :addr => "127.0.0.1",
-  :index_file => File.expand_path("~/.fastri-index")}
+  :index_file => File.join(find_home, ".fastri-index")}
 OptionParser.new do |opts|
   opts.banner = "Usage: fastri-server.rb [options]"
 
