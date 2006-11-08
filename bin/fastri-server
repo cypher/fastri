@@ -19,7 +19,21 @@ def make_index(index_file)
   end
   begin
     require 'rubygems'
-    paths.concat Dir["#{Gem.path}/doc/*/ri"]
+    gemdirs = Dir["#{Gem.path}/doc/*/ri"]
+    gems = Hash.new{|h,k| h[k] = []}
+    gemdirs.each do |path|
+      gemname, version = %r{/([^/]+)-(.*)/ri$}.match(path).captures
+      if gemname.nil? # doesn't follow any conventions :(
+        gems[path[%r{/([^/]+)/ri$}, 1]] << ["unknown", path]
+      else
+        gems[gemname] << [version, path]
+      end
+    end
+    gems.sort_by{|name, _| name}.each do |name, versions|
+      version, path = versions.sort.last
+      puts "Indexing RI docs for #{name} version #{version}."
+      paths << path
+    end
   rescue LoadError
   end 
 
@@ -28,7 +42,12 @@ def make_index(index_file)
   #ri_reader = RI::RiReader.new(RI::RiCache.new(paths))
   ri_reader = FastRI::RiIndex.new_from_paths(paths)
   open(index_file, "wb"){|io| Marshal.dump ri_reader, io}
-  puts "Needed #{Time.new - t0} seconds"
+  puts <<EOF
+Indexed:
+* #{ri_reader.num_methods} methods
+* #{ri_reader.num_namespaces} classes/modules
+Needed #{Time.new - t0} seconds
+EOF
   ri_reader
 end
 
