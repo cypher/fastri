@@ -345,6 +345,16 @@ class RiIndex
 
 #{{{ New (faster) interface
 
+  # Returns the number of methods in the index.
+  def num_methods
+    @method_array.size
+  end
+
+  # Returns the number of namespaces in the index.
+  def num_namespaces
+    @namespace_array.size
+  end
+
   # Returns the ClassEntry associated to the given +full_name+.
   def get_class_entry(full_name, scope = nil)
     entry = get_entry(@namespace_array, full_name, ClassEntry, scope)
