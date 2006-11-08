@@ -89,6 +89,7 @@ EOF
   end
 
   def test_get_class_entry
+    assert_nil(@index.get_class_entry("NONEXISTENT_FOO"))
     assert_equal("ABC", @index.get_class_entry("ABC", nil).full_name)
     assert_nil(@index.get_class_entry("ABC", nil).source_index)
     assert_nil(@index.get_class_entry("ABC::DEF::Foo", 0))
@@ -140,6 +141,22 @@ EOF
     assert_equal(["CDE", "FGH", "FGH::Adfdsf"], 
                  @index.namespaces_under(toplevel, true, "stuff-1.1.0").map{|x| x.full_name})
   end
+
+  def test_source_paths_for_string
+    assert_equal([], @index.source_paths_for(""))
+    assert_equal([], @index.source_paths_for(nil))
+
+    assert_equal(["/usr/share/ri/system/", "/long/path/somegem-0.1.0"], @index.source_paths_for("ABC::DEF"))
+    assert_equal(["/long/path/somegem-0.1.0", "/long/path/stuff-1.1.0"], @index.source_paths_for("CDE.foo"))
+  end
+
+  def test_source_paths_for_entry
+    assert_equal(["/usr/share/ri/system/", "/long/path/somegem-0.1.0"],
+                 @index.source_paths_for(@index.get_class_entry("ABC::DEF")))
+    assert_equal(["/long/path/somegem-0.1.0", "/long/path/stuff-1.1.0"],
+                 @index.source_paths_for(@index.get_method_entry("CDE.foo")))
+  end
+
 
   def test_methods_under_scoped
     results = @index.methods_under("ABC", true, 1)
@@ -255,13 +272,94 @@ EOF
     assert_equal(["CDE.foo"], @index.find_methods("foo", true, toplevel).map{|x| x.full_name})
   end
 
-  def test_classentry_contained_modules_matching
+  def test_num_namespaces
+    assert_equal(7, @index.num_namespaces)
+  end
+
+  def test_num_methods
+    assert_equal(7, @index.num_methods)
+  end
+
+  #{{{ ClassEntry and MethodEntry
+  def test_ClassEntry_contained_modules_matching
     toplevel = @index.top_level_namespace[0]
     assert_equal(["ABC"], toplevel.contained_modules_matching("ABC").map{|x| x.full_name})
 
     class_entry = @index.get_class_entry("ABC")
     assert_equal([], class_entry.contained_modules_matching("ABC").map{|x| x.full_name})
     assert_equal(["ABC::DEF", "ABC::Zzz"], class_entry.contained_modules_matching("").map{|x| x.full_name})
+  end
+
+  def test_ClassEntry_type
+    class_entry = @index.get_class_entry("ABC")
+    assert_equal(:namespace, class_entry.type)
+  end
+
+  def test_ClassEntry_path_names
+    class_entry = @index.get_class_entry("ABC")
+    assert_equal(["/usr/share/ri/system/ABC", "/long/path/somegem-0.1.0/ABC"], class_entry.path_names)
+
+    class_entry = @index.get_class_entry("ABC", 0)
+    assert_equal(["/usr/share/ri/system/ABC"], class_entry.path_names)
+    class_entry = @index.get_class_entry("ABC", 1)
+    assert_equal(["/long/path/somegem-0.1.0/ABC"], class_entry.path_names)
+  end
+
+  def test_ClassEntry_classes_and_modules
+    class_entry = @index.get_class_entry("ABC")
+    assert_equal(["ABC::DEF", "ABC::Zzz"], 
+                 class_entry.classes_and_modules.map{|x| x.full_name})
+    class_entry = @index.get_class_entry("ABC::DEF")
+    assert_equal(["ABC::DEF::Foo"], class_entry.classes_and_modules.map{|x| x.full_name})
+  end
+
+  def test_ClassEntry_contained_class_named
+    class_entry = @index.get_class_entry("ABC")
+    class_entry = class_entry.contained_class_named("DEF")
+    assert_equal("ABC::DEF", class_entry.full_name)
+    assert_equal(1, class_entry.index)
+    class_entry = class_entry.contained_class_named("Foo")
+    assert_equal(2, class_entry.index)
+    assert_nil(class_entry.contained_class_named("Bar"))
+    assert_equal(3, @index.get_class_entry("ABC").contained_class_named("Zzz").index)
+  end
+
+  def test_ClassEntry_methods_matching
+    class_entry = @index.get_class_entry("ABC::Zzz")
+    assert_equal([], class_entry.methods_matching("nonexistent", false))
+    assert_equal([3], class_entry.methods_matching("foo", true).map{|x| x.index})
+    assert_equal([4], class_entry.methods_matching("foo", false).map{|x| x.index})
+  end
+
+  def test_ClassEntry_recursively_find_methods_matching
+    class_entry = @index.get_class_entry("ABC")
+    assert_equal(["ABC::DEF.bar", "ABC::Zzz.foo"], 
+                 class_entry.recursively_find_methods_matching(//, true).map{|x| x.full_name})
+    assert_equal(["ABC::DEF::Foo#baz", "ABC::DEF::Foo#foo", "ABC::Zzz#foo"], 
+                 class_entry.recursively_find_methods_matching(//, false).map{|x| x.full_name})
+    assert_equal([], class_entry.recursively_find_methods_matching(/nonono/, false).map{|x| x.full_name})
+  end
+
+  def test_ClassEntry_all_method_names
+    class_entry = @index.get_class_entry("ABC")
+    assert_equal([], class_entry.all_method_names)
+    class_entry = @index.get_class_entry("ABC::Zzz")
+    assert_equal(["ABC::Zzz.foo", "ABC::Zzz#foo"], class_entry.all_method_names)
+  end
+
+  def test_MethodEntry_path_name
+    method_entry = @index.get_method_entry("CDE.foo")
+    assert_equal("/long/path/somegem-0.1.0/CDE/foo-c.yaml", method_entry.path_name)
+
+    method_entry = @index.get_method_entry("CDE.foo", 1)
+    assert_equal("/long/path/somegem-0.1.0/CDE/foo-c.yaml", method_entry.path_name)
+    method_entry = @index.get_method_entry("CDE.foo", 2)
+    assert_equal("/long/path/stuff-1.1.0/CDE/foo-c.yaml", method_entry.path_name)
+  end
+
+  def test_MethodEntry_type
+    method_entry = @index.get_method_entry("CDE.foo")
+    assert_equal(:method, method_entry.type)
   end
 end
 
