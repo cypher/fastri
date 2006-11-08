@@ -461,6 +461,8 @@ class RiIndex
       when /[#.]\S+/
         method_entry = get_entry(@method_array, entry_or_name, MethodEntry, nil)
         source_paths_for(method_entry)
+      when ""
+        []
       else
         class_entry = get_entry(@namespace_array, entry_or_name, ClassEntry, nil)
         source_paths_for(class_entry)
