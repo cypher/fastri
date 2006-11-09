@@ -112,7 +112,7 @@ class RiService
   end
 
   DEFAULT_OBTAIN_ENTRIES_OPTIONS = {
-    :order => [
+    :lookup_order => [
               :exact, :exact_ci, :nested, :nested_ci, :partial, :partial_ci, 
               :nested_partial, :nested_partial_ci,
     ],
@@ -120,17 +120,17 @@ class RiService
   def obtain_entries(descriptor, options = {})
     options = DEFAULT_OBTAIN_ENTRIES_OPTIONS.merge(options)
     if descriptor.class_names.empty?
-      return obtain_unqualified_method_entries(descriptor.method_name, options[:order])
+      return obtain_unqualified_method_entries(descriptor.method_name, options[:lookup_order])
     end
 
     # if we're here, some namespace was given
     full_ns_name = descriptor.class_names.join("::")
     if descriptor.method_name == nil
-      return obtain_namespace_entries(full_ns_name, options[:order])
+      return obtain_namespace_entries(full_ns_name, options[:lookup_order])
     else  # both namespace and method
       seps = separators(descriptor.is_class_method)
       return obtain_qualified_method_entries(full_ns_name, descriptor.method_name, 
-                                             seps, options[:order])
+                                             seps, options[:lookup_order])
     end
   end
 
