@@ -197,7 +197,7 @@ class RiService
         end
       end
     else
-      capture_stdout(display(type)) do |display|
+      capture_stdout(display(options)) do |display|
         formatter = display.formatter
         formatter.draw_line("Multiple choices:")
         formatter.blankline
