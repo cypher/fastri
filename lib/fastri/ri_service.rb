@@ -270,7 +270,7 @@ class RiService
       end
       sep_re = "(" + separators.map{|x| Regexp.escape(x)}.join("|") + ")"
       m.add_matcher(:exact_ci) do
-        m.yield @ri_reader.methods_under_matching(namespace, /#{sep_re}#{method}$/i, false)
+        m.yield @ri_reader.methods_under_matching("", /^#{namespace}#{sep_re}#{method}$/i, true)
       end
       m.add_matcher(:nested) do
         m.yield @ri_reader.methods_under_matching("", /::#{namespace}#{sep_re}#{method}$/, true)
@@ -282,13 +282,13 @@ class RiService
         m.yield @ri_reader.methods_under_matching(namespace, /#{sep_re}#{method}/, false)
       end
       m.add_matcher(:partial_ci) do
-        m.yield @ri_reader.methods_under_matching(namespace, /#{sep_re}#{method}/i, false)
+        m.yield @ri_reader.methods_under_matching("", /^#{namespace}#{sep_re}#{method}/i, true)
       end
       m.add_matcher(:nested_partial) do
         m.yield @ri_reader.methods_under_matching("", /::#{namespace}#{sep_re}#{method}/, true)
       end
       m.add_matcher(:nested_partial_ci) do
-        m.yield @ri_reader.methods_under_matching("", /::#{namespace}#{sep_re}#{method}/, true)
+        m.yield @ri_reader.methods_under_matching("", /::#{namespace}#{sep_re}#{method}/i, true)
       end
     end
     matcher.get_matches(order)
