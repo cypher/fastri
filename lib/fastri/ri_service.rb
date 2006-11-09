@@ -8,6 +8,8 @@ require 'rdoc/ri/ri_formatter'
 require 'rdoc/ri/ri_display'
 
 require 'fastri/ri_index.rb'
+require 'fastri/name_descriptor'
+
 
 module FastRI
 
