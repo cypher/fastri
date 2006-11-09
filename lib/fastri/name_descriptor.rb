@@ -31,7 +31,9 @@ class NameDescriptor
     case arg
     when /((?:[^:]*::)*[^:]*)(#|::|\.)(.*)$/
       ns, sep, meth_or_class = $~.captures
-      @class_names = ns.split(/::/)
+      # optimization attempt: try to guess the real capitalization,
+      # so we get a direct hit
+      @class_names = ns.split(/::/).map{|x|  x[0,1] = x[0,1].upcase; x }
       if %w[# .].include? sep
         @method_name = meth_or_class
         @is_class_method = 

@@ -21,15 +21,15 @@ class TestNameDescriptor < Test::Unit::TestCase
   end
 
   def test_qualified_methods
-    assert_equal([["foo"], "bar", nil], helper("foo.bar"))
-    assert_equal([["foo"], "bar", true], helper("foo::bar"))
-    assert_equal([["foo"], "bar", false], helper("foo#bar"))
-    assert_equal([["foo", "bar"], "baz", true], helper("foo::bar::baz"))
+    assert_equal([["Foo"], "bar", nil], helper("foo.bar"))
+    assert_equal([["Foo"], "bar", true], helper("foo::bar"))
+    assert_equal([["Foo"], "bar", false], helper("foo#bar"))
+    assert_equal([["Foo", "Bar"], "baz", true], helper("foo::bar::baz"))
   end
 
   def test_namespaces
     assert_equal([["Foo"], nil, nil], helper("Foo"))
-    assert_equal([["foo", "Bar"], nil, nil], helper("foo::Bar"))
+    assert_equal([["Foo", "Bar"], nil, nil], helper("foo::Bar"))
     assert_equal([["Foo", "Bar", "Baz"], nil, nil], helper("Foo::Bar::Baz"))
   end
 end
