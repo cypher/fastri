@@ -22,6 +22,10 @@ options = {
       "ansi"
     end,
   :width => 72,
+  :lookup_order => [
+    :exact, :exact_ci, :nested, :nested_ci, :partial, :partial_ci, 
+    :nested_partial, :nested_partial_ci,
+  ],
 }
 override_addr_env = false
 optparser = OptionParser.new do |opts|
@@ -31,6 +35,18 @@ optparser = OptionParser.new do |opts|
           "(default: 127.0.0.1)") do |addr|
     options[:addr] = addr
     override_addr_env = true
+  end
+
+  order_mapping = {
+    'e' => :exact,   'E' => :exact_ci,   'n' => :nested, 'N' => :nested_ci,
+    'p' => :partial, 'P' => :partial_ci, 'x' => :nested_partial,
+    'X' => :nested_partial_ci
+  }
+  opts.on("-O", "--order ORDER", "Specify lookup order.",
+          "(default: eEnNpPxX)", "Uppercase: case-indep.",
+          "e: exact, n: nested, p: partial",
+          "x: nested and partial") do |order|
+    options[:lookup_order] = order.split(//).map{|x| order_mapping[x]}.compact
   end
 
   opts.on("-f", "--format FMT", "Format to use when displaying output:",
@@ -82,6 +98,7 @@ service = ring_server.read([:name, :FastRI, nil, nil])[2]
 info_options = {
   :formatter => options[:format],
   :width     => options[:width],
+  :lookup_order => options[:lookup_order],
 }
 puts service.info(ARGV[0], info_options)
 # vi: set sw=2 expandtab:
