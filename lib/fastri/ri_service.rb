@@ -67,57 +67,70 @@ class RedirectedTextFormatter < RI::TextFormatter
 end
 
 class RiService
+
+  class MatchFinder
+    def self.new
+      ret = super
+      yield ret if block_given?
+      ret
+    end
+
+    def initialize
+      @matchers = {}
+    end
+
+    def add_matcher(name, &block)
+      @matchers[name] = block
+    end
+
+    def get_matches(methods)
+      catch(:MatchFinder_return) do
+        methods.each do |name|
+          matcher = @matchers[name]
+          matcher.call(self) if matcher
+        end
+        []
+      end
+    end
+
+    def yield(matches)
+      case matches
+      when nil, []; nil
+      when Array
+        throw :MatchFinder_return, matches
+      else
+        throw :MatchFinder_return, [matches]
+      end
+    end
+  end # MatchFinder
+
+
   Options = Struct.new(:formatter, :use_stdout, :width)
 
   def initialize(ri_reader)
     @ri_reader = ri_reader
   end
 
-  def obtain_entries(descriptor, try_partial = true)
+  DEFAULT_OBTAIN_ENTRIES_OPTIONS = {
+    :order => [
+              :exact, :exact_ci, :nested, :nested_ci, :partial, :partial_ci, 
+              :nested_partial, :nested_partial_ci,
+    ],
+  }
+  def obtain_entries(descriptor, options = {})
+    options = DEFAULT_OBTAIN_ENTRIES_OPTIONS.merge(options)
     if descriptor.class_names.empty?
-      meths = @ri_reader.methods_under_matching("", /(#|\.)#{descriptor.method_name}$/, true)
-      return meths unless meths.empty?
-      return [] unless try_partial
-      # try with partial matches: foo -> foobar, foobaz    anywhere in the
-      # hierarchy
-      meths = @ri_reader.methods_under_matching("", /(#|\.)#{descriptor.method_name}/, true)
-      return meths
+      return obtain_unqualified_method_entries(descriptor.method_name, options[:order])
     end
 
     # if we're here, some namespace was given
     full_ns_name = descriptor.class_names.join("::")
     if descriptor.method_name == nil
-      ns = @ri_reader.get_class_entry(full_ns_name)
-      return [ns] if ns
-      # nested namespace
-      namespaces = @ri_reader.namespaces_under_matching("", /::#{full_ns_name}$/, true)
-      return namespaces unless namespaces.empty?
-      return [] unless try_partial
-      # partial match
-      namespaces = @ri_reader.namespaces_under_matching("", /^#{full_ns_name}/, false)
-      return namespaces unless namespaces.empty?
-      # partial and nested
-      namespaces = @ri_reader.namespaces_under_matching("", /::#{full_ns_name}[^:]*$/, true)
-      return namespaces
+      return obtain_namespace_entries(full_ns_name, options[:order])
     else  # both namespace and method
       seps = separators(descriptor.is_class_method)
-      seps.each do |sep|
-        entry = @ri_reader.get_method_entry("#{full_ns_name}#{sep}#{descriptor.method_name}")
-        return [entry] if entry
-      end
-      # no exact matches
-      sep_re = "(" + seps.map{|x| Regexp.escape(x)}.join("|") + ")"
-      # nested
-      methods = @ri_reader.methods_under_matching("", /::#{full_ns_name}#{sep_re}#{descriptor.method_name}$/, true)
-      return methods unless methods.empty?
-
-      return [] unless try_partial
-      # partial
-      methods = @ri_reader.methods_under_matching(full_ns_name, /#{sep_re}#{descriptor.method_name}/, false)
-      return methods unless methods.empty?
-      # partial and nested
-      methods = @ri_reader.methods_under_matching("", /::#{full_ns_name}#{sep_re}#{descriptor.method_name}/, true)
-      return methods
+      return obtain_qualified_method_entries(full_ns_name, descriptor.method_name, 
+                                             seps, options[:order])
     end
   end
 
@@ -168,7 +181,7 @@ class RiService
     options = DEFAULT_INFO_OPTIONS.merge(options)
     return nil if keyw.strip.empty?
     descriptor = NameDescriptor.new(keyw)
-    entries = obtain_entries(descriptor, true)
+    entries = obtain_entries(descriptor, options)
 
     case entries.size
     when 0; nil
@@ -199,7 +212,7 @@ class RiService
     options = DEFAULT_INFO_OPTIONS.merge(options)
     return nil if keyword.strip.empty?
     descriptor = NameDescriptor.new(keyword)
-    entries = obtain_entries(descriptor, false)
+    entries = obtain_entries(descriptor, options)
     return nil if entries.empty? || RiIndex::ClassEntry === entries[0]
 
     params_text = ""
@@ -229,6 +242,85 @@ class RiService
   end
 
   private
+
+  def obtain_unqualified_method_entries(name, order)
+    matcher = MatchFinder.new do |m|
+      m.add_matcher(:exact) do
+        m.yield @ri_reader.methods_under_matching("", /(#|\.)#{name}$/, true)
+      end
+      m.add_matcher(:exact_ci) do
+        m.yield @ri_reader.methods_under_matching("", /(#|\.)#{name}$/i, true)
+      end
+      m.add_matcher(:partial) do
+        m.yield @ri_reader.methods_under_matching("", /(#|\.)#{name}/, true)
+      end
+      m.add_matcher(:partial_ci) do
+        m.yield @ri_reader.methods_under_matching("", /(#|\.)#{name}/i, true)
+      end
+    end
+    matcher.get_matches(order)
+  end
+
+  def obtain_qualified_method_entries(namespace, method, separators, order)
+    matcher = MatchFinder.new do |m|
+      m.add_matcher(:exact) do
+        separators.each do |sep|
+          m.yield @ri_reader.get_method_entry("#{namespace}#{sep}#{method}")
+        end
+      end
+      sep_re = "(" + separators.map{|x| Regexp.escape(x)}.join("|") + ")"
+      m.add_matcher(:exact_ci) do
+        m.yield @ri_reader.methods_under_matching(namespace, /#{sep_re}#{method}$/i, false)
+      end
+      m.add_matcher(:nested) do
+        m.yield @ri_reader.methods_under_matching("", /::#{namespace}#{sep_re}#{method}$/, true)
+      end
+      m.add_matcher(:nested_ci) do
+        m.yield @ri_reader.methods_under_matching("", /::#{namespace}#{sep_re}#{method}$/i, true)
+      end
+      m.add_matcher(:partial) do
+        m.yield @ri_reader.methods_under_matching(namespace, /#{sep_re}#{method}/, false)
+      end
+      m.add_matcher(:partial_ci) do
+        m.yield @ri_reader.methods_under_matching(namespace, /#{sep_re}#{method}/i, false)
+      end
+      m.add_matcher(:nested_partial) do
+        m.yield @ri_reader.methods_under_matching("", /::#{namespace}#{sep_re}#{method}/, true)
+      end
+      m.add_matcher(:nested_partial_ci) do
+        m.yield @ri_reader.methods_under_matching("", /::#{namespace}#{sep_re}#{method}/, true)
+      end
+    end
+    matcher.get_matches(order)
+  end
+
+  def obtain_namespace_entries(name, order)
+    matcher = MatchFinder.new do |m|
+      m.add_matcher(:exact){ m.yield @ri_reader.get_class_entry(name) }
+      m.add_matcher(:exact_ci) do 
+        m.yield @ri_reader.namespaces_under_matching("", /^#{name}$/i, false)
+      end
+      m.add_matcher(:nested) do 
+        m.yield @ri_reader.namespaces_under_matching("", /::#{name}$/, true)
+      end
+      m.add_matcher(:nested_ci) do 
+        m.yield @ri_reader.namespaces_under_matching("", /::#{name}$/i, true)
+      end
+      m.add_matcher(:partial) do
+        m.yield @ri_reader.namespaces_under_matching("", /^#{name}/, false)
+      end
+      m.add_matcher(:partial_ci) do
+        m.yield @ri_reader.namespaces_under_matching("", /^#{name}/i, false)
+      end
+      m.add_matcher(:nested_partial) do
+        m.yield @ri_reader.namespaces_under_matching("", /::#{name}[^:]*$/, true)
+      end
+      m.add_matcher(:nested_partial_ci) do
+        m.yield @ri_reader.namespaces_under_matching("", /::#{name}[^:]*$/i, true)
+      end
+    end
+    matcher.get_matches(order)
+  end
 
   def _class_list(keyword, rep)
     return nil if keyword.strip.empty?
