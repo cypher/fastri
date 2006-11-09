@@ -189,12 +189,17 @@ class RiIndex
     @gem_names = paths.map do |p|
       fullp = File.expand_path(p)
       gemname = nil
-      Gem.path.each do |gempath|
-        re = %r!^#{Regexp.escape(File.expand_path(gempath))}/doc/!
-        if re =~ fullp
-          gemname = fullp.gsub(re,"")[%r{^[^/]+}]
-          break
+      begin
+        require 'rubygems'
+        Gem.path.each do |gempath|
+          re = %r!^#{Regexp.escape(File.expand_path(gempath))}/doc/!
+          if re =~ fullp
+            gemname = fullp.gsub(re,"")[%r{^[^/]+}]
+            break
+          end
         end
+      rescue LoadError
+        # no RubyGems, no gems installed, skip it
       end
       gemname ? gemname : "system"
     end
