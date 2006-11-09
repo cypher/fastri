@@ -5,6 +5,7 @@
 require 'fastri/version'
 require 'fastri/ri_index'
 require 'fastri/ri_service'
+require 'enumerator'
 
 FASTRI_SERVER_VERSION = "0.0.1"
 
@@ -158,7 +159,6 @@ EOF
 end
 
 # {{{ Init message
-require 'enumerator'
 puts "fastri-server #{FASTRI_SERVER_VERSION} (FastRI #{FastRI::FASTRI_VERSION}) listening on #{DRb.uri}"
 puts "ACL:"
 acl_opt.each_slice(2){|action, host| puts "%-5s %s" % [action, host]}
