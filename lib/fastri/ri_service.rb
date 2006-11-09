@@ -179,6 +179,17 @@ class RiService
     :formatter => :ansi,
     :width     => 72,
   }
+
+  def matches(keyword, options = {})
+    options = DEFAULT_INFO_OPTIONS.merge(options)
+    return nil if keyword.strip.empty?
+    descriptor = NameDescriptor.new(keyword)
+    ret = obtain_entries(descriptor, options).map{|x| x.full_name}
+    ret ? ret : nil
+  rescue RiError
+    return nil
+  end
+
   def info(keyw, options = {})
     options = DEFAULT_INFO_OPTIONS.merge(options)
     return nil if keyw.strip.empty?
