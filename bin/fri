@@ -10,7 +10,17 @@ require 'optparse'
 # 0.0.0.0, which results in a DNS request, adding way too much latency
 options = {
   :addr   => "127.0.0.1",
-  :format => "ansi"
+  :format =>
+    case RUBY_PLATFORM
+    when /win/
+      if /darwin|cygwin/ =~ RUBY_PLATFORM
+        "ansi"
+      else
+        "plain"
+      end
+    else
+      "ansi"
+    end
 }
 override_addr_env = false
 optparser = OptionParser.new do |opts|
@@ -23,7 +33,7 @@ optparser = OptionParser.new do |opts|
   end
 
   opts.on("-f", "--format FMT", "Format to use when displaying output:",
-          "   ansi, plain (default: ansi)") do |format|
+          "   ansi, plain (default: #{options[:format]})") do |format|
     options[:format] = format
   end
 
