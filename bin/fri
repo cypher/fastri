@@ -20,7 +20,8 @@ options = {
       end
     else
       "ansi"
-    end
+    end,
+  :width => 72,
 }
 override_addr_env = false
 optparser = OptionParser.new do |opts|
@@ -35,6 +36,11 @@ optparser = OptionParser.new do |opts|
   opts.on("-f", "--format FMT", "Format to use when displaying output:",
           "   ansi, plain (default: #{options[:format]})") do |format|
     options[:format] = format
+  end
+
+  opts.on("-w", "--width WIDTH", "Set the width of the output.") do |width|
+    w = width.to_i
+    options[:width] = w > 0 ? w : options[:width]
   end
 
   opts.on("-h", "--help", "Show this help message") do 
@@ -73,5 +79,9 @@ EOF
   exit(-1)
 end
 service = ring_server.read([:name, :FastRI, nil, nil])[2]
-puts service.info(ARGV[0], options[:format])
+info_options = {
+  :formatter => options[:format],
+  :width     => options[:width],
+}
+puts service.info(ARGV[0], info_options)
 # vi: set sw=2 expandtab:

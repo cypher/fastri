@@ -160,7 +160,12 @@ class RiService
     return nil
   end
 
-  def info(keyw, type = :ansi)
+  DEFAULT_INFO_OPTIONS = {
+    :formatter => :ansi,
+    :width     => 72,
+  }
+  def info(keyw, options = {})
+    options = DEFAULT_INFO_OPTIONS.merge(options)
     return nil if keyw.strip.empty?
     descriptor = NameDescriptor.new(keyw)
     entries = obtain_entries(descriptor, true)
@@ -170,11 +175,11 @@ class RiService
     when 1
       case entries[0].type
       when :namespace
-        capture_stdout(display(type)) do |display|
+        capture_stdout(display(options)) do |display|
           display.display_class_info(@ri_reader.get_class(entries[0]), @ri_reader)
         end
       when :method
-        capture_stdout(display(type)) do |display|
+        capture_stdout(display(options)) do |display|
           display.display_method_info(@ri_reader.get_method(entries[0]))
         end
       end
@@ -190,7 +195,8 @@ class RiService
     return nil
   end
 
-  def args(keyword, type = :ansi)
+  def args(keyword, options = {})
+    options = DEFAULT_INFO_OPTIONS.merge(options)
     return nil if keyword.strip.empty?
     descriptor = NameDescriptor.new(keyword)
     entries = obtain_entries(descriptor, false)
@@ -199,7 +205,7 @@ class RiService
     params_text = ""
     entries.each do |entry|
       desc = @ri_reader.get_method(entry)
-      params_text << capture_stdout(display(type)) do |display|
+      params_text << capture_stdout(display(options)) do |display|
         display.full_params(desc)
       end
     end
@@ -242,16 +248,22 @@ class RiService
     when nil;   [".","#"]
     end
   end
-  def display(type)
+
+  DEFAULT_DISPLAY_OPTIONS = {
+    :formatter => :ansi,
+    :width     => 72,
+  }
+  def display(opt = {})
+    opt = DEFAULT_DISPLAY_OPTIONS.merge(opt)
     options = Options.new
     options.use_stdout = true
-    case type.to_sym
+    case opt[:formatter].to_sym
     when :ansi
       options.formatter = RedirectedAnsiFormatter
     else
       options.formatter = RedirectedTextFormatter
     end
-    options.width = 72
+    options.width = opt[:width]
     StringRedirectedDisplay.new(options)
   end
 
