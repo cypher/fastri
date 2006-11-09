@@ -300,7 +300,7 @@ class RiService
     matcher = MatchFinder.new do |m|
       m.add_matcher(:exact){ m.yield @ri_reader.get_class_entry(name) }
       m.add_matcher(:exact_ci) do 
-        m.yield @ri_reader.namespaces_under_matching("", /^#{name}$/i, false)
+        m.yield @ri_reader.namespaces_under_matching("", /^#{name}$/i, true)
       end
       m.add_matcher(:nested) do 
         m.yield @ri_reader.namespaces_under_matching("", /::#{name}$/, true)
@@ -309,10 +309,10 @@ class RiService
         m.yield @ri_reader.namespaces_under_matching("", /::#{name}$/i, true)
       end
       m.add_matcher(:partial) do
-        m.yield @ri_reader.namespaces_under_matching("", /^#{name}/, false)
+        m.yield @ri_reader.namespaces_under_matching("", /^#{name}/, true)
       end
       m.add_matcher(:partial_ci) do
-        m.yield @ri_reader.namespaces_under_matching("", /^#{name}/i, false)
+        m.yield @ri_reader.namespaces_under_matching("", /^#{name}/i, true)
       end
       m.add_matcher(:nested_partial) do
         m.yield @ri_reader.namespaces_under_matching("", /::#{name}[^:]*$/, true)
