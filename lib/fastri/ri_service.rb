@@ -122,7 +122,9 @@ class RiService
   def obtain_entries(descriptor, options = {})
     options = DEFAULT_OBTAIN_ENTRIES_OPTIONS.merge(options)
     if descriptor.class_names.empty?
-      return obtain_unqualified_method_entries(descriptor.method_name, options[:lookup_order])
+      seps = separators(descriptor.is_class_method)
+      return obtain_unqualified_method_entries(descriptor.method_name, seps,
+                                               options[:lookup_order])
     end
 
     # if we're here, some namespace was given
@@ -256,19 +258,20 @@ class RiService
 
   private
 
-  def obtain_unqualified_method_entries(name, order)
+  def obtain_unqualified_method_entries(name, separators, order)
+    sep_re = "(" + separators.map{|x| Regexp.escape(x)}.join("|") + ")"
     matcher = MatchFinder.new do |m|
       m.add_matcher(:exact) do
-        m.yield @ri_reader.methods_under_matching("", /(#|\.)#{name}$/, true)
+        m.yield @ri_reader.methods_under_matching("", /#{sep_re}#{name}$/, true)
       end
       m.add_matcher(:exact_ci) do
-        m.yield @ri_reader.methods_under_matching("", /(#|\.)#{name}$/i, true)
+        m.yield @ri_reader.methods_under_matching("", /#{sep_re}#{name}$/i, true)
       end
       m.add_matcher(:partial) do
-        m.yield @ri_reader.methods_under_matching("", /(#|\.)#{name}/, true)
+        m.yield @ri_reader.methods_under_matching("", /#{sep_re}#{name}/, true)
       end
       m.add_matcher(:partial_ci) do
-        m.yield @ri_reader.methods_under_matching("", /(#|\.)#{name}/i, true)
+        m.yield @ri_reader.methods_under_matching("", /#{sep_re}#{name}/i, true)
       end
     end
     matcher.get_matches(order)
