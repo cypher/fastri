@@ -26,6 +26,7 @@ options = {
     :exact, :exact_ci, :nested, :nested_ci, :partial, :partial_ci, 
     :nested_partial, :nested_partial_ci,
   ],
+  :show_matches => false,
 }
 override_addr_env = false
 optparser = OptionParser.new do |opts|
@@ -48,6 +49,8 @@ optparser = OptionParser.new do |opts|
           "x: nested and partial") do |order|
     options[:lookup_order] = order.split(//).map{|x| order_mapping[x]}.compact
   end
+
+  opts.on("--show-matches", "Only show matching entries."){ options[:show_matches] = true }
 
   opts.on("-f", "--format FMT", "Format to use when displaying output:",
           "   ansi, plain (default: #{options[:format]})") do |format|
@@ -100,5 +103,9 @@ info_options = {
   :width     => options[:width],
   :lookup_order => options[:lookup_order],
 }
-puts service.info(ARGV[0], info_options)
+if options[:show_matches]
+  puts service.matches(ARGV[0], info_options).sort
+else
+  puts service.info(ARGV[0], info_options)
+end
 # vi: set sw=2 expandtab:
