@@ -1,0 +1,19 @@
+
+User-visible changes in FastRI
+
+Since version 0.1.0 (2006-11-08)
+================================
+Features
+--------
+* the search strategy can be specified with --order 
+* added case-insensitive search strategies
+* --show-matches returns a list of matching entries
+* default output format defaults to 'plain' on win32
+
+Bugfixes
+--------
+* the home directory is detected correctly on win32
+* no more SecurityErrors due to calls to #require after $SAFE=1
+* index creation doesn't bomb when RubyGems is not installed
+* executables are added the .rb extension when installing on win32 with
+  setup.rb
