@@ -31,5 +31,13 @@ module Util
     end
   end
   module_function :gem_directories_unique
+
+  # Return the <tt>[name, version, path]</tt> array for the gem owning the RI
+  # information stored in +path+, or +nil+.
+  def gem_info_for_path(path, gem_dir_info = FastRI::Util.gem_directories_unique)
+    path = File.expand_path(path)
+    matches = gem_dir_info.select{|name, version, gem_path| path.index(gem_path) == 0}
+    matches.sort_by{|name, version, gem_path| [gem_path.size, version, name]}.last
+  end
 end # module Util
 end # module FastRI
