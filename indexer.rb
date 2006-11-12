@@ -92,11 +92,15 @@ end
 
 require 'rdoc/ri/ri_paths'
 require 'yaml'
+$:.unshift "lib"
+require 'fastri/util'
 
-paths = RI::Paths::PATH
-#paths = [ RI::Paths::SYSDIR, RI::Paths::SITEDIR, RI::Paths::HOMEDIR ].find_all do |p|
-#  p && File.directory?(p)
-#end
+#paths = RI::Paths::PATH
+gem_paths = FastRI::Util.gem_directories_unique.map{|_,_,path| path}
+paths = [ RI::Paths::SYSDIR, RI::Paths::SITEDIR, RI::Paths::HOMEDIR ].find_all do |p|
+  p && File.directory?(p)
+end
+paths.concat gem_paths
 indexer = IndexBuilder.new("test_FULLTEXT", "test_INDEX")
 bad = 0
 paths.each do |path|
