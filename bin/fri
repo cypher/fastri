@@ -74,12 +74,7 @@ if ARGV.empty?
   exit
 end
 
-if override_addr_env
-  addr = "druby://#{options[:addr]}:0"
-else
-  addr =  "druby://#{ENV["FASTRI_ADDR"]||options[:addr]}:0"
-end
-
+# {{{ try to find where the method comes from exactly
 def help_method_extract(m) # :nodoc:
   unless m.inspect =~ %r[\A#<(?:Unbound)?Method: (.*?)>\Z]
     raise "Cannot parse result of #{m.class}#inspect: #{m.inspect}"
@@ -114,6 +109,18 @@ def magic_help(query)
 end
 help_query = magic_help(ARGV[0])
 
+#{{{ determine the address to bind to
+if override_addr_env
+  addr_spec = options[:addr]
+else
+  addr_spec = ENV["FASTRI_ADDR"] || options[:addr]
+end
+
+ip   = addr_spec[/^[^:]+/]    || "127.0.0.1"
+port = addr_spec[/:(\d+)/, 1] || 0
+addr = "druby://#{ip}:#{port}"
+
+#{{{ start DRb and perform request
 begin
   DRb.start_service(addr)
   ring_server = Rinda::RingFinger.primary

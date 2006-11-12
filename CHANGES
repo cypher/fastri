@@ -7,6 +7,8 @@ Features
 --------
 * fri can now determine where a method actually came from for core classes
   e.g.  fri File.inject   -> docs for Enumerable#inject
+* the port to bind to can be specified, e.g.
+    fri -s 192.168.1.2:12345
 
 Since version 0.1.0 (2006-11-08)
 ================================
