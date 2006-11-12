@@ -129,7 +129,9 @@ options[:allowed_hosts].each{|host| acl_opt.concat ["allow", host.strip]}
 acl = ACL.new(acl_opt)
 DRb.install_acl(acl)
 
-drb_addr = "druby://#{options[:addr]}:0"
+ip   = options[:addr][/^[^:]+/]    || "127.0.0.1"
+port = options[:addr][/:(\d+)/, 1] || 0
+drb_addr = "druby://#{ip}:#{port}"
 DRb.start_service(drb_addr)
 
 $SAFE = 1
