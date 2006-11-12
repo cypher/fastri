@@ -27,4 +27,12 @@ EOF
                  gem_info_for_path("/usr/local/lib/ruby/gems/1.8/doc/baz-0.1.1/ri/Array/cdesc-Array.yaml", GEM_DIR_INFO))
     assert_nil(gem_info_for_path("/usr/lib/ruby/gems/1.8/doc/baz-1.1.1/ri/Array/cdesc-Array.yaml", GEM_DIR_INFO))
   end
+
+  def test_gem_relpath_to_full_name
+    assert_equal("Array", gem_relpath_to_full_name("Array/cdesc-Array.yaml"))
+    assert_equal("String", gem_relpath_to_full_name("String/cdesc-String.yaml"))
+    assert_equal("Foo::Bar::String", gem_relpath_to_full_name("Foo/Bar/String/cdesc-String.yaml"))
+    assert_equal("Foo::Bar#eql?", gem_relpath_to_full_name("Foo/Bar/eql%3f-i.yaml"))
+    assert_equal("Foo::Bar.eql?", gem_relpath_to_full_name("Foo/Bar/eql%3f-c.yaml"))
+  end
 end

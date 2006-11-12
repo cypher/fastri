@@ -6,6 +6,8 @@ begin
 rescue LoadError
 end
 
+require 'rdoc/ri/ri_writer'
+
 module FastRI
 module Util
   # Return an array of <tt>[name, version, path]</tt> arrays corresponding to
@@ -38,6 +40,21 @@ module Util
     path = File.expand_path(path)
     matches = gem_dir_info.select{|name, version, gem_path| path.index(gem_path) == 0}
     matches.sort_by{|name, version, gem_path| [gem_path.size, version, name]}.last
+  end
+
+  # Return the +full_name+ (in ClassEntry or MethodEntry's sense) given a path
+  # to a .yaml file relative to a "base RI DB path".
+  def gem_relpath_to_full_name(relpath)
+    case relpath
+    when %r{^(.*)/cdesc-([^/]*)\.yaml$}
+      path, name = $~.captures
+      (path.split(%r{/})[0..-2] << name).join("::")
+    when %r{^(.*)/([^/]*)-(i|c)\.yaml$}
+      path, escaped_name, type = $~.captures
+      name = RI::RiWriter.external_to_internal(escaped_name)
+      sep = ( type == 'c' ) ? "." : "#"
+      path.gsub("/", "::") + sep + name
+    end
   end
 end # module Util
 end # module FastRI
