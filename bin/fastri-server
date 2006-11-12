@@ -5,6 +5,7 @@
 require 'fastri/version'
 require 'fastri/ri_index'
 require 'fastri/ri_service'
+require 'fastri/util'
 require 'enumerator'
 
 FASTRI_SERVER_VERSION = "0.0.1"
@@ -18,25 +19,10 @@ def make_index(index_file)
   paths = [ RI::Paths::SYSDIR, RI::Paths::SITEDIR, RI::Paths::HOMEDIR ].find_all do |p|
     p && File.directory?(p)
   end
-  begin
-    require 'rubygems'
-    gemdirs = Dir["#{Gem.path}/doc/*/ri"]
-    gems = Hash.new{|h,k| h[k] = []}
-    gemdirs.each do |path|
-      gemname, version = %r{/([^/]+)-(.*)/ri$}.match(path).captures
-      if gemname.nil? # doesn't follow any conventions :(
-        gems[path[%r{/([^/]+)/ri$}, 1]] << ["unknown", path]
-      else
-        gems[gemname] << [version, path]
-      end
-    end
-    gems.sort_by{|name, _| name}.each do |name, versions|
-      version, path = versions.sort.last
-      puts "Indexing RI docs for #{name} version #{version}."
-      paths << path
-    end
-  rescue LoadError
-  end 
+  FastRI::Util.gem_directories_unique.each do |name, version, path|
+    paths << path
+    puts "Indexing RI docs for #{name} version #{version || "unknown"}."
+  end
 
   puts "Building index."
   t0 = Time.new
