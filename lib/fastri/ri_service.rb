@@ -273,6 +273,12 @@ class RiService
       m.add_matcher(:partial_ci) do
         m.yield @ri_reader.methods_under_matching("", /#{sep_re}#{name}/i, true)
       end
+      m.add_matcher(:anywhere) do
+        m.yield @ri_reader.methods_under_matching("", /#{sep_re}.*#{name}/, true)
+      end
+      m.add_matcher(:anywhere_ci) do
+        m.yield @ri_reader.methods_under_matching("", /#{sep_re}.*#{name}/i, true)
+      end
     end
     matcher.get_matches(order)
   end
