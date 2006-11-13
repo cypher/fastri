@@ -24,13 +24,8 @@ class TestFullTextIndexer < Test::Unit::TestCase
     assert_equal(DATA2, @indexer.data("bar.txt"))
   end
 
-  def test_escape_text
-    str = "<< || >> <| |> ||<<>>"
-    assert_equal(str, @indexer.unescape_text(@indexer.escape_text(str)))
-  end
-
   def test_preprocess
-    data = "this is a <<<<foo bar>>>> bla"
+    data = "this is a \0foo bar\0 bla"
     assert_equal("this is a foo bar bla", @indexer.preprocess(data))
   end
 
@@ -58,7 +53,7 @@ EOF
     fulltext    = StringIO.new("")
     suffixarray = StringIO.new("")
     @indexer.build_index(fulltext, suffixarray)
-    assert_equal(["<<<<foo.txt>>>>"], fulltext.string.scan(/<<<<.*>>>>/))
+    assert_equal(["\0foo.txt\0"], fulltext.string.scan(/\0.*\0/))
     assert_equal(4000 * 4, suffixarray.string.size)
   end
 

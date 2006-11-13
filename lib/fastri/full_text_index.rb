@@ -91,7 +91,7 @@ class FullTextIndex
         loop do
           idx += 1
           str = get_string(sarrayIO, fulltextIO, idx, size)
-          upto = str.index("<<<<")
+          upto = str.index("\0")
           str = str[0, upto] if upto
           break unless str.index(result.query) == 0
           if str[term_or_regexp]
@@ -116,7 +116,7 @@ class FullTextIndex
         loop do
           idx += 1
           str = get_string(sarrayIO, fulltextIO, idx, size)
-          upto = str.index("<<<<")
+          upto = str.index("\0")
           str = str[0, upto] if upto
           break unless str.index(result.query) == 0
           if str[term_or_regexp]
@@ -136,23 +136,17 @@ class FullTextIndex
     get_fulltext_IO do |fulltextIO|
       get_sarray_IO do |sarrayIO|
         base = index_to_offset(sarrayIO, index)
+        actual_offset = offset
+        newsize = size
         if base + offset < 0    # at the beginning
           excess        = (base + offset).abs   # remember offset is < 0
           newsize       = size - excess
           actual_offset = offset + excess
-          str           = get_string(sarrayIO, fulltextIO, index, newsize + 4, offset)
-          to            = (str.index("<<<<", -actual_offset) || -4) - 1
-          str[0..to]
-        elsif base + offset < 8 # no place for file before
-          str = get_string(sarrayIO, fulltextIO, index, size + 4, offset)
-          to  = (str.index("<<<<", -offset) || -4) - 1
-          str[0..to]
-        else
-          str  = get_string(sarrayIO, fulltextIO, index, size + 8, offset - 4)
-          from = (str.rindex(">>>>", -offset) || 0) + 4
-          to   = (str.index("<<<<", -offset) || -4) - 1
-          str[from..to]
         end
+        str  = get_string(sarrayIO, fulltextIO, index, newsize, offset)
+        from = (str.rindex("\0", -actual_offset) || -1) + 1
+        to   = (str.index("\0", -actual_offset) || 0) - 1
+        str[from..to]
       end
     end
   end
@@ -184,7 +178,7 @@ class FullTextIndex
     loop do
       text = fulltextIO.read(4096)
       break unless text
-      if md = /<<<<(.*?)>>>>/.match((oldtext[-300..-1]||"") + text)
+      if md = /\0(.*?)\0/.match((oldtext[-300..-1]||"") + text)
         return md[1]
       end
       oldtext = text

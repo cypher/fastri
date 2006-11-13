@@ -9,7 +9,7 @@ class IndexBuilder
 
   def add_document(name, contents)
     @fulltext << preprocess(contents)
-    @fulltext << "<<<<#{IndexBuilder.escape(name)}>>>>"
+    @fulltext << "\0#{name}\0"
   end
 
   require 'strscan'
@@ -28,8 +28,8 @@ class IndexBuilder
         count = 0
       end
       start = scanner.pos
-      text = scanner.scan_until(/<<<<.*?>>>>/)
-      text = text.sub(/<<<<.*?>>>>$/,"")
+      text = scanner.scan_until(/\0.*?\0/)
+      text = text.sub(/\0.*?\0$/,"")
       suffixes.concat find_suffixes(text, start)
       scanner.terminate if !text
     end
@@ -59,20 +59,9 @@ class IndexBuilder
     suffixes
   end
 
-  def self.escape(str)
-    str = str.gsub(/\|/,"||")
-    str.gsub!(/</,"|<")
-    str
-  end
-
-  def self.unescape(str)
-    str = str.gsub(/\|\|/, "|")
-    str.gsub!(/\|</, "<")
-    str
-  end
   private
   def preprocess(str)
-    str.gsub(/>>>>|<<<</,"")
+    str.gsub(/\0/,"")
   end
 end
 

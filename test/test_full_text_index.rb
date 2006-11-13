@@ -7,15 +7,23 @@ class TestFullTextIndex < Test::Unit::TestCase
   require 'stringio'
   include FastRI
 
-  DATA = <<EOF
-this is a test <<<<foo.txt>>>>zzzz<<<<bar.txt>>>>
+  data = <<EOF
+this is a test 
+foo.txt
+zzzz
+bar.txt
 EOF
-  SUFFIXES = [8, 5, 10, 0, 30].map{|x| [x].pack("V")}.join("")
+  DATA = (data.split(/\n/) << "").join("\0")
+  SUFFIXES = %w[a is\ a test this zzzz].map{|w| [DATA.index(w)].pack("V")}.join("")
 
-  DATA2 = <<EOF
-this is a test <<<<foo.txt>>>>zzzz this<<<<bar.txt>>>>
+  data = <<EOF
+this is a test 
+foo.txt
+zzzz this
+bar.txt
 EOF
-  SUFFIXES2 = [8, 5, 10, 35, 0, 30].map{|x| [x].pack("V")}.join("")
+  DATA2 = (data.split(/\n/) << "").join("\0")
+  SUFFIXES2 = ["a", "is a", "test", "this\0", "this", "zzzz"].map{|x| [DATA2.index(x)].pack("V")}.join("")
 
   def setup
     @index = FullTextIndex.new_from_ios(StringIO.new(DATA), StringIO.new(SUFFIXES))

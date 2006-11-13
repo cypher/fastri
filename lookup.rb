@@ -18,13 +18,13 @@ class FullTextSearcher
 
     def text(size)
       str = @searcher.fetch_data(@index, size, 0)
-      str[0..(str.index("<<<<")||-1)]
+      str[0..(str.index("\0")||-1)]
     end
 
     private
     def strip_markers(str, size)
-      first = (str.rindex(">>>>", -size) || -4) + 4
-      last  = str.index("<<<<", size) || str.size
+      first = (str.rindex("\0", -size) || -1) + 1
+      last  = str.index("\0", size) || str.size
       str[first...last]
     end
   end
@@ -117,7 +117,7 @@ class FullTextSearcher
     loop do
       text = fulltextIO.read(4096)
       break unless text
-      if md = /<<<<(.*?)>>>>/.match((oldtext[-300..-1]||"") + text)
+      if md = /\0(.*?)\0/.match((oldtext[-300..-1]||"") + text)
         return md[1]
       end
       oldtext = text

@@ -26,20 +26,8 @@ class FullTextIndexer
     @documents = @documents.uniq
   end
 
-  def escape_text(str)
-    str = str.gsub(/\|/,"||")
-    str.gsub!(/</,"|<")
-    str
-  end
-
-  def unescape_text(str)
-    str = str.gsub(/\|\|/, "|")
-    str.gsub!(/\|</, "<")
-    str
-  end
-
   def preprocess(str)
-    str.gsub(/>>>>|<<<</,"")
+    str.gsub(/\0/,"")
   end
 
   require 'strscan'
@@ -74,7 +62,7 @@ class FullTextIndexer
     documents.each do |doc|
       io.write(@doc_hash[doc])
       full_text_IO.write(@doc_hash[doc])
-      footer = "<<<<#{escape_text(doc)}>>>>"
+      footer = "\0#{doc}\0"
       io.write(footer)
       full_text_IO.write(footer)
     end
@@ -86,8 +74,8 @@ class FullTextIndexer
     until scanner.eos?
       count += 1
       start = scanner.pos
-      text = scanner.scan_until(/<<<<.*?>>>>/)
-      text = text.sub(/<<<<.*?>>>>$/,"")
+      text = scanner.scan_until(/\0.*?\0/)
+      text = text.sub(/\0.*?\0/,"")
       suffixes.concat find_suffixes(text, start)
       scanner.terminate if !text
     end
