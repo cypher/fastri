@@ -3,7 +3,35 @@
 
 require 'rdoc/ri/ri_cache'
 require 'rdoc/ri/ri_reader'
+require 'rdoc/ri/ri_descriptions'
 require 'fastri/version'
+
+
+# This is taken straight from 1.8.5's rdoc/ri/ri_descriptions.rb.
+# Older releases have a buggy #merge_in that crashes when old.comment is nil.
+if RUBY_RELEASE_DATE < "2006-06-15"
+  module ::RI # :nodoc:
+    class ModuleDescription # :nodoc:
+      remove_method :merge_in
+      # merge in another class desscription into this one
+      def merge_in(old)
+        merge(@class_methods, old.class_methods)
+        merge(@instance_methods, old.instance_methods)
+        merge(@attributes, old.attributes)
+        merge(@constants, old.constants)
+        merge(@includes, old.includes)
+        if @comment.nil? || @comment.empty?
+          @comment = old.comment
+        else
+          unless old.comment.nil? or old.comment.empty? then
+            @comment << SM::Flow::RULE.new
+            @comment.concat old.comment
+          end
+        end
+      end
+    end
+  end
+end
 
 
 module FastRI
