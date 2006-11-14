@@ -129,7 +129,7 @@ OptionParser.new do |opts|
     exit 0
   end
 
-  opts.on("-F", "--full-text DIR", "Place full-text index in DIR",
+  opts.on("-F", "--full-text-dir DIR", "Place full-text index in DIR",
           "(default: #{options[:full_text_dir]})") do |dir|
     options[:full_text_dir] = dir if dir
     options[:do_full_text]  = true
