@@ -1,11 +1,14 @@
 # Copyright (C) 2006  Mauricio Fernandez <mfp@acm.org>
 #
 
+require 'fastri/version'
+
 module FastRI
 
 class FullTextIndexer
   WORD_RE    = /[A-Za-z0-9_]+/
   NONWORD_RE = /[^A-Za-z0-9_]+/
+  MAGIC      = "FastRI full-text index #{FASTRI_FT_INDEX_FORMAT}\n"
 
   def initialize(max_querysize)
     @documents = []
@@ -59,6 +62,7 @@ class FullTextIndexer
   def build_index(full_text_IO, suffix_array_IO)
     fulltext = ""
     io = StringIO.new(fulltext)
+    io.write MAGIC
     documents.each do |doc|
       io.write(@doc_hash[doc])
       full_text_IO.write(@doc_hash[doc])
@@ -68,6 +72,7 @@ class FullTextIndexer
     end
 
     scanner = StringScanner.new(fulltext)
+    scanner.scan(Regexp.new(Regexp.escape(MAGIC)))
 
     count = 0
     suffixes = []

@@ -59,7 +59,9 @@ EOF
 
   def build_index_test_helper(data, suffixes)
     @indexer.add_document("foo.txt", data)
-    sorted   = suffixes.sort_by{|i| data[i]}
+    offset = FullTextIndexer::MAGIC.size
+    suffixes = suffixes.map{|x| x + offset}
+    sorted   = suffixes.sort_by{|i| data[i - offset]}
     f_io  = StringIO.new("")
     sa_io = StringIO.new("")
     @indexer.build_index(f_io, sa_io)
