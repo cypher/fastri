@@ -5,6 +5,8 @@
 
 require 'rinda/ring'
 require 'optparse'
+require 'fastri/util'
+require 'fastri/full_text_index'
 
 # we bind to 127.0.0.1 by default, because otherwise Ruby will try with
 # 0.0.0.0, which results in a DNS request, adding way too much latency
@@ -27,6 +29,8 @@ options = {
     :nested_partial, :nested_partial_ci,
   ],
   :show_matches => false,
+  :do_full_text => false, 
+  :full_text_dir => File.join(FastRI::Util.find_home, ".fastri-fulltext"),
 }
 override_addr_env = false
 optparser = OptionParser.new do |opts|
@@ -52,6 +56,16 @@ optparser = OptionParser.new do |opts|
   end
 
   opts.on("--show-matches", "Only show matching entries."){ options[:show_matches] = true }
+
+  opts.on("-S", "--full-text", "Perform full-text search.") do 
+    options[:do_full_text] = true
+  end
+
+  opts.on("-F", "--full-text-dir DIR", "Use full-text index in DIR",
+          "(default: #{options[:full_text_dir]})") do |dir|
+    options[:full_text_dir] = dir if dir
+    options[:do_full_text]  = true
+  end
 
   opts.on("-f", "--format FMT", "Format to use when displaying output:",
           "   ansi, plain (default: #{options[:format]})") do |format|
@@ -145,6 +159,48 @@ info_options = {
   :width     => options[:width],
   :lookup_order => options[:lookup_order],
 }
+
+def display_fulltext_search_result(result)
+  path = File.expand_path(result.path)
+  gem_name, version, gem_path = FastRI::Util.gem_info_for_path(path)
+  if gem_name
+    rel_path = path[/#{Regexp.escape(gem_path)}\/(.*)/, 1]
+    if rel_path
+      entry_name = FastRI::Util.gem_relpath_to_full_name(rel_path)
+    end
+    puts "Found in #{gem_name} #{version}  #{entry_name}"
+    context = result.context(100)
+    from = (context.rindex("\n", context.index(result.query)) || -1) + 1
+    to   = (context.index("\n", context.index(result.query)) || 0) - 1
+    puts "  " + context[from..to]
+    puts
+  else
+    puts "Found in #{path}:"
+    context = result.context(100)
+    from = (context.rindex("\n", context.index(result.query)) || -1) + 1
+    to   = (context.index("\n", context.index(result.query)) || 0) - 1
+    puts "  " + context[from..to]
+    puts
+  end
+end
+
+if options[:do_full_text]
+  fulltext = File.join(options[:full_text_dir], "full_text.dat")
+  suffixes = File.join(options[:full_text_dir], "suffixes.dat")
+  index = FastRI::FullTextIndex.new_from_filenames(fulltext, suffixes)
+  result = index.lookup(ARGV[0])
+  if !result
+    puts "nil"
+  else
+    display_fulltext_search_result(result)
+    while result = index.next_match(result)
+      display_fulltext_search_result(result)
+    end
+  end
+  
+  exit 0
+end
+
 if options[:show_matches]
   puts service.matches(help_query, info_options).sort
 else

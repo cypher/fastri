@@ -2,6 +2,7 @@
 #
 
 require 'fastri/full_text_indexer'
+require 'stringio'
 
 module FastRI
 
