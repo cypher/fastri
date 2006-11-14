@@ -41,6 +41,7 @@ module Util
     matches = gem_dir_info.select{|name, version, gem_path| path.index(gem_path) == 0}
     matches.sort_by{|name, version, gem_path| [gem_path.size, version, name]}.last
   end
+  module_function :gem_info_for_path
 
   # Return the +full_name+ (in ClassEntry or MethodEntry's sense) given a path
   # to a .yaml file relative to a "base RI DB path".
@@ -56,6 +57,7 @@ module Util
       path.gsub("/", "::") + sep + name
     end
   end
+  module_function :gem_relpath_to_full_name
   
   # Returns the home directory (win32-aware).
   def find_home
