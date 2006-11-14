@@ -56,5 +56,26 @@ module Util
       path.gsub("/", "::") + sep + name
     end
   end
+  
+  # Returns the home directory (win32-aware).
+  def find_home
+    # stolen from RubyGems
+    ['HOME', 'USERPROFILE'].each do |homekey|
+      return ENV[homekey] if ENV[homekey]
+    end
+    if ENV['HOMEDRIVE'] && ENV['HOMEPATH']
+      return "#{ENV['HOMEDRIVE']}:#{ENV['HOMEPATH']}"
+    end
+    begin
+      File.expand_path("~")
+    rescue StandardError => ex
+      if File::ALT_SEPARATOR
+        "C:/"
+      else
+        "/"
+      end
+    end
+  end
+  module_function :find_home
 end # module Util
 end # module FastRI

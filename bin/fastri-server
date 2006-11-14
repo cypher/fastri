@@ -6,6 +6,7 @@ require 'fastri/version'
 require 'fastri/ri_index'
 require 'fastri/ri_service'
 require 'fastri/util'
+require 'fastri/full_text_indexer'
 require 'enumerator'
 
 FASTRI_SERVER_VERSION = "0.0.1"
@@ -38,21 +39,59 @@ EOF
   ri_reader
 end
 
-# stolen from RubyGems
-def find_home
-  ['HOME', 'USERPROFILE'].each do |homekey|
-    return ENV[homekey] if ENV[homekey]
-  end
-  if ENV['HOMEDRIVE'] && ENV['HOMEPATH']
-    return "#{ENV['HOMEDRIVE']}:#{ENV['HOMEPATH']}"
-  end
-  begin
-    File.expand_path("~")
-  rescue StandardError => ex
-    if File::ALT_SEPARATOR
-      "C:/"
+def linearize(comment)
+  case s = comment["body"]
+  when String; s
+  else 
+    if Array === (y = comment["contents"])
+      y.map{|z| linearize(z)}.join("\n")
+    elsif s = comment["text"]
+      s
     else
-      "/"
+      nil
+    end
+  end
+end
+
+def make_full_text_index(dir)
+  paths = [ RI::Paths::SYSDIR, RI::Paths::SITEDIR, RI::Paths::HOMEDIR ].find_all do |p|
+    p && File.directory?(p)
+  end
+  FastRI::Util.gem_directories_unique.each do |name, version, path|
+    paths << path
+    puts "Indexing RI docs for #{name} version #{version || "unknown"}."
+  end
+  unless File.exist?(dir)
+    Dir.mkdir(dir)
+  end
+  indexer = FastRI::FullTextIndexer.new(40)
+  bad = 0
+  paths.each do |path|
+    Dir["#{path}/**/*.yaml"].each do |yamlfile|
+      yaml = File.read(yamlfile)
+      begin
+        data = YAML.load(yaml.gsub(/ \!.*/, ''))
+      rescue Exception
+        bad += 1
+        #puts "Couldn't load #{yamlfile}"
+        next
+      end
+
+      desc = (data['comment']||[]).map{|x| linearize(x)}.join("\n")
+      desc.gsub!(/<\/?(em|b|tt|ul|ol|table)>/, "")
+      desc.gsub!(/&quot;/, "'")
+      desc.gsub!(/&lt;/, "<")
+      desc.gsub!(/&gt;/, ">")
+      desc.gsub!(/&amp;/, "&")
+      unless desc.empty?
+        indexer.add_document(yamlfile, desc) 
+      end
+    end
+  end
+
+  File.open(File.join(dir, "full_text.dat"), "wb") do |fulltextIO|
+    File.open(File.join(dir, "suffixes.dat"), "wb") do |suffixesIO|
+      indexer.build_index(fulltextIO, suffixesIO)
     end
   end
 end
@@ -61,8 +100,12 @@ end
 
 require 'optparse'
 
+home = FastRI::Util.find_home
 options = {:allowed_hosts => ["127.0.0.1"], :addr => "127.0.0.1",
-  :index_file => File.join(find_home, ".fastri-index")}
+  :index_file => File.join(home, ".fastri-index"),
+  :do_full_text => false, 
+  :full_text_dir => File.join(home, ".fastri-fulltext"),
+}
 OptionParser.new do |opts|
   opts.banner = "Usage: fastri-server.rb [options]"
 
@@ -83,6 +126,17 @@ OptionParser.new do |opts|
 
   opts.on("-b", "--rebuild-index", "Only rebuild index.") do 
     make_index(options[:index_file])
+    exit 0
+  end
+
+  opts.on("-F", "--full-text DIR", "Place full-text index in DIR",
+          "(default: #{options[:full_text_dir]})") do |dir|
+    options[:full_text_dir] = dir if dir
+    options[:do_full_text]  = true
+  end
+
+  opts.on("-B", "--rebuild-full-text", "Rebuild full-text index.") do
+    make_full_text_index(options[:full_text_dir])
     exit 0
   end
 
