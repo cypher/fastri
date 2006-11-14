@@ -8,7 +8,7 @@ module FastRI
 class FullTextIndexer
   WORD_RE    = /[A-Za-z0-9_]+/
   NONWORD_RE = /[^A-Za-z0-9_]+/
-  MAGIC      = "FastRI full-text index #{FASTRI_FT_INDEX_FORMAT}\n"
+  MAGIC      = "FastRI full-text index #{FASTRI_FT_INDEX_FORMAT}\0"
 
   def initialize(max_querysize)
     @documents = []

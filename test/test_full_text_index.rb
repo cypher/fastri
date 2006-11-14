@@ -7,26 +7,27 @@ class TestFullTextIndex < Test::Unit::TestCase
   require 'stringio'
   include FastRI
 
+  magic = FullTextIndexer::MAGIC
   data = <<EOF
-this is a test 
+#{magic}this is a test 
 \r\000\000\000foo.txt\000\004\b{\000
 zzzz
 \r\000\000\000bar.txt\000\004\b{\000
 EOF
   DATA = (data.split(/\n/) << "").join("\0")
-  SUFFIXES = %w[a is\ a test this zzzz].map{|w| [DATA.index(w)].pack("V")}.join("")
+  SUFFIXES = %w[a\ test is\ a test this zzzz].map{|w| [DATA.index(w)].pack("V")}.join("")
 
   data = <<EOF
-this is a test 
+#{magic}this is a test 
 \r\000\000\000foo.txt\000\004\b{\000
 zzzz this
 \r\000\000\000bar.txt\000\004\b{\000
 EOF
   DATA2 = (data.split(/\n/) << "").join("\0")
-  SUFFIXES2 = ["a", "is a", "test", "this\0", "this", "zzzz"].map{|x| [DATA2.index(x)].pack("V")}.join("")
+  SUFFIXES2 = ["a test", "is a", "test", "this\0", "this", "zzzz"].map{|x| [DATA2.index(x)].pack("V")}.join("")
 
   data = <<EOF
-this is a test 
+#{magic}this is a test 
 SIZ1foo.txt\000#{Marshal.dump({:foo => :bar, :bar => 1})}
 zzzz this
 SIZ2bar.txt\000#{Marshal.dump({:foo => :baz, :bar => 42})}
@@ -37,7 +38,7 @@ EOF
   len2 = lines[3].size - 4 + 1
   lines[3].sub!(/SIZ2/, [len2].pack("V"))
   DATA3 = (lines << "").join("\0")
-  SUFFIXES3 = ["a", "is a", "test", "this\0", "this", "zzzz"].map{|x| [DATA3.index(x)].pack("V")}.join("")
+  SUFFIXES3 = ["a test", "is a", "test", "this\0", "this", "zzzz"].map{|x| [DATA3.index(x)].pack("V")}.join("")
 
   def setup
     @index = FullTextIndex.new_from_ios(StringIO.new(DATA), StringIO.new(SUFFIXES))

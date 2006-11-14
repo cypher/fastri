@@ -1,6 +1,8 @@
 # Copyright (C) 2006  Mauricio Fernandez <mfp@acm.org>
 #
 
+require 'fastri/full_text_indexer'
+
 module FastRI
 
 class FullTextIndex
@@ -54,6 +56,7 @@ class FullTextIndex
     end
     @type = type
     @max_query_size = options[:max_query_size]
+    check_magic
   end
 
   def lookup(term)
@@ -150,6 +153,21 @@ class FullTextIndex
   end
 
   private
+  def check_magic
+    get_fulltext_IO do |io|
+      io.rewind
+      header = io.read(FullTextIndexer::MAGIC.size)
+      raise "Unsupported index format." unless header
+      version = header[/\d+\.\d+\.\d+/]
+      raise "Unsupported index format." unless version
+      major, minor, teeny = version.scan(/\d+/)
+      if major != FASTRI_FT_INDEX_FORMAT_MAJOR or
+         minor > FASTRI_FT_INDEX_FORMAT_MINOR
+         raise "Unsupported index format"
+      end
+    end
+  end
+
   def get_fulltext_IO
     case @type
     when :io; yield @fulltext_IO
