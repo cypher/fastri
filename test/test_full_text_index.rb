@@ -9,25 +9,40 @@ class TestFullTextIndex < Test::Unit::TestCase
 
   data = <<EOF
 this is a test 
-foo.txt
+\r\000\000\000foo.txt\000\004\b{\000
 zzzz
-bar.txt
+\r\000\000\000bar.txt\000\004\b{\000
 EOF
   DATA = (data.split(/\n/) << "").join("\0")
   SUFFIXES = %w[a is\ a test this zzzz].map{|w| [DATA.index(w)].pack("V")}.join("")
 
   data = <<EOF
 this is a test 
-foo.txt
+\r\000\000\000foo.txt\000\004\b{\000
 zzzz this
-bar.txt
+\r\000\000\000bar.txt\000\004\b{\000
 EOF
   DATA2 = (data.split(/\n/) << "").join("\0")
   SUFFIXES2 = ["a", "is a", "test", "this\0", "this", "zzzz"].map{|x| [DATA2.index(x)].pack("V")}.join("")
 
+  data = <<EOF
+this is a test 
+SIZ1foo.txt\000#{Marshal.dump({:foo => :bar, :bar => 1})}
+zzzz this
+SIZ2bar.txt\000#{Marshal.dump({:foo => :baz, :bar => 42})}
+EOF
+  lines = data.split(/\n/)
+  len1 = lines[1].size - 4 + 1
+  lines[1].sub!(/SIZ1/, [len1].pack("V"))
+  len2 = lines[3].size - 4 + 1
+  lines[3].sub!(/SIZ2/, [len2].pack("V"))
+  DATA3 = (lines << "").join("\0")
+  SUFFIXES3 = ["a", "is a", "test", "this\0", "this", "zzzz"].map{|x| [DATA3.index(x)].pack("V")}.join("")
+
   def setup
     @index = FullTextIndex.new_from_ios(StringIO.new(DATA), StringIO.new(SUFFIXES))
     @index2 = FullTextIndex.new_from_ios(StringIO.new(DATA2), StringIO.new(SUFFIXES2))
+    @index3 = FullTextIndex.new_from_ios(StringIO.new(DATA3), StringIO.new(SUFFIXES3))
   end
 
   def test_new_from_ios
@@ -49,6 +64,13 @@ EOF
 
     assert_equal(4, @index.lookup("z").index)
     assert_equal("bar.txt", @index.lookup("z").path)
+  end
+
+  def test_lookup_metadata
+    assert_equal({}, @index.lookup("test").metadata)
+    assert_equal({}, @index.lookup("zzzz").metadata)
+    assert_equal({:foo => :bar, :bar => 1}, @index3.lookup("test").metadata)
+    assert_equal({:foo => :baz, :bar => 42}, @index3.lookup("zzz").metadata)
   end
 
   def test_Result_text

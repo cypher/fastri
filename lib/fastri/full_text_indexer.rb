@@ -16,13 +16,13 @@ class FullTextIndexer
     @max_wordsize = max_querysize
   end
 
-  def add_document(name, data)
-    @doc_hash[name] = data
+  def add_document(name, data, metadata = {})
+    @doc_hash[name] = [data, metadata]
     @documents << name
   end
 
   def data(name)
-    @doc_hash[name]
+    @doc_hash[name][0]
   end
 
   def documents
@@ -63,10 +63,14 @@ class FullTextIndexer
     fulltext = ""
     io = StringIO.new(fulltext)
     io.write MAGIC
+    full_text_IO.write MAGIC
     documents.each do |doc|
-      io.write(@doc_hash[doc])
-      full_text_IO.write(@doc_hash[doc])
-      footer = "\0#{doc}\0"
+      data, metadata = @doc_hash[doc]
+      io.write(data)
+      full_text_IO.write(data)
+      meta_txt = Marshal.dump(metadata)
+      footer = "\0....#{doc}\0#{meta_txt}\0"
+      footer[1,4] = [footer.size - 5].pack("V")
       io.write(footer)
       full_text_IO.write(footer)
     end
@@ -79,10 +83,13 @@ class FullTextIndexer
     until scanner.eos?
       count += 1
       start = scanner.pos
-      text = scanner.scan_until(/\0.*?\0/)
-      text = text.sub(/\0.*?\0/,"")
-      suffixes.concat find_suffixes(text, start)
-      scanner.terminate if !text
+      text = scanner.scan_until(/\0/)
+      suffixes.concat find_suffixes(text[0..-2], start)
+      len = scanner.scan(/..../).unpack("V")[0]
+      #puts "LEN: #{len}  #{scanner.pos}  #{scanner.string.size}"
+      #puts "#{scanner.string[scanner.pos,20].inspect}"
+      scanner.pos += len
+      #scanner.terminate if !text
     end
     sorted = suffixes.sort_by{|x| fulltext[x, @max_wordsize]}
     sorted.each_slice(10000){|x| suffix_array_IO.write x.pack("V*")}

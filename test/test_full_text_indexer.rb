@@ -53,7 +53,8 @@ EOF
     fulltext    = StringIO.new("")
     suffixarray = StringIO.new("")
     @indexer.build_index(fulltext, suffixarray)
-    assert_equal(["\0foo.txt\0"], fulltext.string.scan(/\0.*\0/))
+    assert_equal(["\000\r\000\000\000foo.txt\000\004\b{\000\000"], 
+                 fulltext.string.scan(/\0.*$/))
     assert_equal(4000 * 4, suffixarray.string.size)
   end
 

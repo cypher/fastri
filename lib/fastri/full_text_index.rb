@@ -7,13 +7,14 @@ class FullTextIndex
   MAX_QUERY_SIZE = 20
   MAX_REGEXP_MATCH_SIZE = 255
   class Result
-    attr_reader :path, :query, :index
+    attr_reader :path, :query, :index, :metadata
 
-    def initialize(searcher, query, index, path)
+    def initialize(searcher, query, index, path, metadata)
       @searcher = searcher
       @index    = index
       @query    = query
       @path     = path
+      @metadata = metadata
     end
 
     def context(size)
@@ -68,11 +69,8 @@ class FullTextIndex
         index, offset = binary_search(sarrayIO, fulltextIO, term, 0, num_suffixes)
         if offset
           fulltextIO.pos = offset
-          if path = find_path(fulltextIO)
-            Result.new(self, term, index, path)
-          else
-            nil
-          end
+          path, metadata = find_metadata(fulltextIO)
+          return Result.new(self, term, index, path, metadata) if path
         else
           nil
         end
@@ -96,8 +94,8 @@ class FullTextIndex
           break unless str.index(result.query) == 0
           if str[term_or_regexp]
             fulltextIO.pos = index_to_offset(sarrayIO, idx)
-            path = find_path(fulltextIO)
-            return Result.new(self, result.query, idx, path) if path
+            path, metadata = find_metadata(fulltextIO)
+            return Result.new(self, result.query, idx, path, metadata) if path
           end
         end
       end
@@ -121,8 +119,8 @@ class FullTextIndex
           break unless str.index(result.query) == 0
           if str[term_or_regexp]
             fulltextIO.pos = index_to_offset(sarrayIO, idx)
-            path = find_path(fulltextIO)
-            ret << Result.new(self, result.query, idx, path) if path
+            path, metadata = find_metadata(fulltextIO)
+            ret << Result.new(self, result.query, idx, path, metadata) if path
           end
         end
       end
@@ -173,16 +171,27 @@ class FullTextIndex
     sarrayIO.read(4).unpack("V")[0]
   end
 
-  def find_path(fulltextIO)
+  def find_metadata(fulltextIO)
     oldtext = ""
     loop do
       text = fulltextIO.read(4096)
       break unless text
-      if md = /\0(.*?)\0/.match((oldtext[-300..-1]||"") + text)
-        return md[1]
+      if idx = text.index("\0")
+        if idx + 4 >= text.size
+          text.concat(fulltextIO.read(4096))
+        end
+        len     = text[idx+1, 4].unpack("V")[0]
+        missing = idx + 5 + len - text.size
+        if missing > 0
+          text.concat(fulltextIO.read(missing))
+        end
+        footer         = text[idx + 5, len - 1]
+        path, metadata = /(.*?)\0(.*)/m.match(footer).captures
+        return [path, Marshal.load(metadata)]
       end
       oldtext = text
     end
+    nil
   end
 
   def get_string(sarrayIO, fulltextIO, index, size, off = 0)
