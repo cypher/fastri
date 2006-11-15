@@ -160,41 +160,68 @@ info_options = {
   :lookup_order => options[:lookup_order],
 }
 
-def display_fulltext_search_result(result)
-  path = File.expand_path(result.path)
-  gem_name, version, gem_path = FastRI::Util.gem_info_for_path(path)
+MAX_CONTEXT_LINES = 20
+def context_wrap(text, width)
+  "... " + 
+  text.gsub(/(.{1,#{width-4}})( +|$\n?)|(.{1,#{width-4}})/, "\\1\\3\n").chomp
+end
+
+def display_fulltext_search_results(results, gem_dir_info = FastRI::Util.gem_directories_unique,
+                                    width = 78)
+  return if results.empty?
+  path = File.expand_path(results[0].path)
+  gem_name, version, gem_path = FastRI::Util.gem_info_for_path(path, gem_dir_info)
   if gem_name
     rel_path = path[/#{Regexp.escape(gem_path)}\/(.*)/, 1]
     if rel_path
       entry_name = FastRI::Util.gem_relpath_to_full_name(rel_path)
     end
     puts "Found in #{gem_name} #{version}  #{entry_name}"
-    context = result.context(100)
-    from = (context.rindex("\n", context.index(result.query)) || -1) + 1
-    to   = (context.index("\n", context.index(result.query)) || 0) - 1
-    puts "  " + context[from..to]
-    puts
   else
-    puts "Found in #{path}:"
-    context = result.context(100)
+    rdoc_system_path = File.expand_path(RI::Paths::SYSDIR)
+    if path.index(rdoc_system_path)
+      rel_path = path[/#{Regexp.escape(rdoc_system_path)}\/(.*)/, 1]
+      puts "Found in system  #{FastRI::Util.gem_relpath_to_full_name(rel_path)}"
+    else
+      puts "Found in #{path}:"
+    end
+  end
+  text = results.map do |result|
+    context = result.context(120)
     from = (context.rindex("\n", context.index(result.query)) || -1) + 1
     to   = (context.index("\n", context.index(result.query)) || 0) - 1
-    puts "  " + context[from..to]
-    puts
+    context_wrap(context[from..to], width)
   end
+  puts
+  puts text.uniq[0...MAX_CONTEXT_LINES]
+  puts
 end
 
 if options[:do_full_text]
   fulltext = File.join(options[:full_text_dir], "full_text.dat")
   suffixes = File.join(options[:full_text_dir], "suffixes.dat")
   index = FastRI::FullTextIndex.new_from_filenames(fulltext, suffixes)
-  result = index.lookup(ARGV[0])
-  if !result
+  gem_dir_info = FastRI::Util.gem_directories_unique
+  match_sets = ARGV.map do |query|
+    result = index.lookup(query)
+    if result
+      index.next_matches(result) + [result]
+    else
+      []
+    end
+  end
+  path_map = Hash.new{|h,k| h[k] = []}
+  match_sets.each{|matches| matches.each{|m| path_map[m.path] << m} }
+  paths = match_sets[1..-1].inject(match_sets[0].map{|x| x.path}.uniq) do |s,x|
+    s & x.map{|y| y.path}.uniq
+  end
+  if paths.empty?
     puts "nil"
   else
-    display_fulltext_search_result(result)
-    while result = index.next_match(result)
-      display_fulltext_search_result(result)
+    puts "#{paths.size} hits"
+    paths.sort_by{|path| -path_map[path].size}.map do |path|
+      puts "=" * options[:width]
+      display_fulltext_search_results(path_map[path], gem_dir_info, options[:width])
     end
   end
   
