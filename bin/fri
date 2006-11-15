@@ -200,7 +200,19 @@ end
 if options[:do_full_text]
   fulltext = File.join(options[:full_text_dir], "full_text.dat")
   suffixes = File.join(options[:full_text_dir], "suffixes.dat")
-  index = FastRI::FullTextIndex.new_from_filenames(fulltext, suffixes)
+  begin
+    index = FastRI::FullTextIndex.new_from_filenames(fulltext, suffixes)
+  rescue Exception
+    puts <<EOF
+Couldn't open the full-text index:
+#{fulltext}
+#{suffixes}
+
+The index needs to be rebuilt with
+   fastri-server -B
+EOF
+    exit(-1)
+  end
   gem_dir_info = FastRI::Util.gem_directories_unique
   match_sets = ARGV.map do |query|
     result = index.lookup(query)
