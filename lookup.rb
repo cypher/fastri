@@ -1,3 +1,10 @@
+#!/usr/bin/env ruby
+# Copyright (C) 2006  Mauricio Fernandez <mfp@acm.org>
+#
+# Full-text searching using O(M * log N + P) binary search over the suffix
+# array.
+# This is the proof of concept that evolved into FastRI's full-text searching
+# subsystem.
 
 class FullTextSearcher
   MAX_WORD_SIZE = 20

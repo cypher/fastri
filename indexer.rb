@@ -1,3 +1,9 @@
+#!/usr/bin/env ruby
+# Copyright (C) 2006  Mauricio Fernandez <mfp@acm.org>
+#
+# Full-text indexing of the RI documentation.
+# This is the proof of concept that evolved into FastRI's full-text searching
+# subsystem.
 
 class IndexBuilder
   MAXWORD_SIZE = 20
