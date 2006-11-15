@@ -5,11 +5,13 @@ Since version 0.1.1 (2006-11-10)
 ================================
 Features
 --------
+* fri can do full-text search (-S, --full-text); try  fri -S byte order
 * fri can now determine where a method actually came from for core classes
   e.g.  fri File.inject   -> docs for Enumerable#inject
 * you can specify which ports the DRb services must bind to:
     fastri-server -s 192.168.1.2:54321
     fri -s 192.168.1.2:12345
+* new search methods: "anywhere" (a) and "anywhere, case-indep." (A)
 
 Since version 0.1.0 (2006-11-08)
 ================================
