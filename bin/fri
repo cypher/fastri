@@ -31,6 +31,8 @@ options = {
   :show_matches => false,
   :do_full_text => false, 
   :full_text_dir => File.join(FastRI::Util.find_home, ".fastri-fulltext"),
+  :use_pager => false,
+  :pager => nil,
 }
 override_addr_env = false
 optparser = OptionParser.new do |opts|
@@ -59,17 +61,32 @@ optparser = OptionParser.new do |opts|
 
   opts.on("-S", "--full-text", "Perform full-text search.") do 
     options[:do_full_text] = true
+    options[:use_pager]    = true
+    options[:format]       = "plain"
   end
 
   opts.on("-F", "--full-text-dir DIR", "Use full-text index in DIR",
           "(default: #{options[:full_text_dir]})") do |dir|
     options[:full_text_dir] = dir if dir
     options[:do_full_text]  = true
+    options[:use_pager]     = true
+    options[:format]        = "plain"
   end
 
   opts.on("-f", "--format FMT", "Format to use when displaying output:",
           "   ansi, plain (default: #{options[:format]})") do |format|
     options[:format] = format
+  end
+
+  opts.on("-P", "--[no-]pager", "Use pager.", "(default: don't)") do |usepager|
+    options[:use_pager] = usepager
+    options[:format] = "plain" if usepager
+  end
+
+  opts.on("--pager-cmd PAGER", "Use pager PAGER.", "(default: don't)") do |pager|
+    options[:pager]     = pager
+    options[:use_pager] = true
+    options[:format]    = "plain"
   end
 
   opts.on("-w", "--width WIDTH", "Set the width of the output.") do |width|
@@ -195,6 +212,17 @@ def display_fulltext_search_results(results, gem_dir_info = FastRI::Util.gem_dir
   puts
   puts text.uniq[0...MAX_CONTEXT_LINES]
   puts
+end
+
+if options[:use_pager]
+  [options[:pager], ENV["PAGER"], "less", "more", "pager"].compact.uniq.each do |pager|
+    begin
+      $stdout = IO.popen(pager, "w")
+      at_exit{ $stdout.close }
+      break
+    rescue Exception
+    end
+  end
 end
 
 if options[:do_full_text]
