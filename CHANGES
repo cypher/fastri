@@ -1,6 +1,13 @@
 
 User-visible changes in FastRI
 
+Since version 0.2.0 (2006-11-15)
+================================
+Features
+--------
+* fri will use a pager in full-text search mode, and also when asked to 
+  (-P, --[no-]pager, --pager-cmd)
+
 Since version 0.1.1 (2006-11-10)
 ================================
 Features
