@@ -139,7 +139,6 @@ def magic_help(query)
     query
   end
 end
-help_query = magic_help(ARGV[0])
 
 #{{{ determine the address to bind to
 if override_addr_env
@@ -268,9 +267,12 @@ EOF
   exit 0
 end
 
-if options[:show_matches]
-  puts service.matches(help_query, info_options).sort
-else
-  puts service.info(help_query, info_options)
+ARGV.each do |term|
+  help_query = magic_help(term)
+  if options[:show_matches]
+    puts service.matches(help_query, info_options).sort
+  else
+    puts service.info(help_query, info_options)
+  end
 end
 # vi: set sw=2 expandtab:
