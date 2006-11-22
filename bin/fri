@@ -3,7 +3,6 @@
 # Copyright (C) 2006 Mauricio Fernandez <mfp@acm.org>
 #
 
-require 'rinda/ring'
 require 'optparse'
 require 'fastri/util'
 require 'fastri/full_text_index'
@@ -142,41 +141,6 @@ def magic_help(query)
   end
 end
 
-#{{{ determine the address to bind to
-if override_addr_env
-  addr_spec = options[:addr]
-else
-  addr_spec = ENV["FASTRI_ADDR"] || options[:addr]
-end
-
-ip   = addr_spec[/^[^:]+/]    || "127.0.0.1"
-port = addr_spec[/:(\d+)/, 1] || 0
-addr = "druby://#{ip}:#{port}"
-
-#{{{ start DRb and perform request
-begin
-  DRb.start_service(addr)
-  ring_server = Rinda::RingFinger.primary
-rescue Exception
-  puts <<EOF
-Couldn't initialize DRb and locate the Ring server.
-
-Please make sure that:
- * the fastri-server is running, the server is bound to the correct interface,
-   and the ACL setup allows connections from this host
- * fri is using the correct interface for incoming DRb requests:
-   either set the FASTRI_ADDR environment variable, or use --bind ADDR, e.g
-      export FASTRI_ADDR="192.168.1.12"
-      fri Array
-EOF
-  exit(-1)
-end
-service = ring_server.read([:name, :FastRI, nil, nil])[2]
-info_options = {
-  :formatter => options[:format],
-  :width     => options[:width],
-  :lookup_order => options[:lookup_order],
-}
 
 MAX_CONTEXT_LINES = 20
 def context_wrap(text, width)
@@ -215,18 +179,7 @@ def display_fulltext_search_results(results, gem_dir_info = FastRI::Util.gem_dir
   puts
 end
 
-if options[:use_pager]
-  [options[:pager], ENV["PAGER"], "less", "more", "pager"].compact.uniq.each do |pager|
-    begin
-      $stdout = IO.popen(pager, "w")
-      at_exit{ $stdout.close }
-      break
-    rescue Exception
-    end
-  end
-end
-
-if options[:do_full_text]
+def perform_fulltext_search(options)
   fulltext = File.join(options[:full_text_dir], "full_text.dat")
   suffixes = File.join(options[:full_text_dir], "suffixes.dat")
   begin
@@ -260,14 +213,70 @@ EOF
     puts "nil"
   else
     puts "#{paths.size} hits"
-    paths.sort_by{|path| -path_map[path].size}.map do |path|
+    paths.sort_by{|path| 1.0 * -path_map[path].size / path_map[path].first.metadata[:size] ** 0.5}.map do |path|
       puts "=" * options[:width]
+      puts 1.0 * path_map[path].size / path_map[path].first.metadata[:size] ** 0.5
       display_fulltext_search_results(path_map[path], gem_dir_info, options[:width])
     end
   end
   
   exit 0
 end
+
+#{{{ set up pager
+if options[:use_pager]
+  [options[:pager], ENV["PAGER"], "less", "more", "pager"].compact.uniq.each do |pager|
+    begin
+      $stdout = IO.popen(pager, "w")
+      at_exit{ $stdout.close }
+      break
+    rescue Exception
+    end
+  end
+end
+
+#{{{ perform full text search if asked to
+perform_fulltext_search(options) if options[:do_full_text]
+
+#{{{ normal query
+require 'rinda/ring'
+
+
+#{{{ determine the address to bind to
+if override_addr_env
+  addr_spec = options[:addr]
+else
+  addr_spec = ENV["FASTRI_ADDR"] || options[:addr]
+end
+
+ip   = addr_spec[/^[^:]+/]    || "127.0.0.1"
+port = addr_spec[/:(\d+)/, 1] || 0
+addr = "druby://#{ip}:#{port}"
+
+#{{{ start DRb and perform request
+begin
+  DRb.start_service(addr)
+  ring_server = Rinda::RingFinger.primary
+rescue Exception
+  $stderr.puts <<EOF
+Couldn't initialize DRb and locate the Ring server.
+
+Please make sure that:
+ * the fastri-server is running, the server is bound to the correct interface,
+   and the ACL setup allows connections from this host
+ * fri is using the correct interface for incoming DRb requests:
+   either set the FASTRI_ADDR environment variable, or use --bind ADDR, e.g
+      export FASTRI_ADDR="192.168.1.12"
+      fri Array
+EOF
+  exit(-1)
+end
+service = ring_server.read([:name, :FastRI, nil, nil])[2]
+info_options = {
+  :formatter => options[:format],
+  :width     => options[:width],
+  :lookup_order => options[:lookup_order],
+}
 
 ARGV.each do |term|
   help_query = magic_help(term)
