@@ -1,11 +1,27 @@
 # Copyright (C) 2006  Mauricio Fernandez <mfp@acm.org>
 
-require 'rdoc/ri/ri_paths'
-begin
-  require 'rubygems'
-rescue LoadError
+# emulate rubygems.rb and define Gem.path if not loaded
+# This is much faster than requiring rubygems.rb, which loads way too much
+# stuff.
+unless defined? ::Gem
+  require 'rbconfig'
+  module Gem
+    def self.path
+      ENV['GEM_HOME'] || default_dir
+    end
+    def self.default_dir
+      if defined? RUBY_FRAMEWORK_VERSION
+        return File.join(File.dirname(Config::CONFIG["sitedir"]), "Gems")
+      else
+        File.join(Config::CONFIG['libdir'], 'ruby', 'gems', Config::CONFIG['ruby_version'])
+      end
+    end
+  end
 end
-
+# don't let rdoc/ri/ri_paths load rubygems.rb, that takes ~100ms !
+$".unshift "rubygems.rb"
+require 'rdoc/ri/ri_paths'
+$".delete "rubygems.rb"
 require 'rdoc/ri/ri_writer'
 
 module FastRI
