@@ -68,6 +68,11 @@ optparser = OptionParser.new do |opts|
     options[:use_pager]    = true
     options[:list_methods] = true
   end
+  opts.on("-l", "--list-names", "List all known namespaces/methods.") do
+    options[:use_pager]    = true
+    options[:list_classes] = true
+    options[:list_methods] = true
+  end
 
   opts.on("-S", "--full-text", "Perform full-text search.") do 
     options[:do_full_text] = true
@@ -290,14 +295,9 @@ info_options = {
 }
 
 # {{{ list classes or methods
-
-if options[:list_classes]
-  puts service.all_classes
-  exit
-elsif options[:list_methods]
-  puts service.all_methods
-  exit
-end
+puts service.all_classes if options[:list_classes]
+puts service.all_methods if options[:list_methods]
+exit if options[:list_classes] || options[:list_methods]
 
 # {{{ normal query
 
