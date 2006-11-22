@@ -37,7 +37,7 @@ class TestIntegrationFullTextIndex < Test::Unit::TestCase
     index = get_index
     assert_equal("first.txt", index.lookup("foo").path)
     assert_equal("second.doc", index.lookup("bar").path)
-    assert_equal({:foo=>"baz", :type=>"text/plain"}, index.lookup("foo").metadata)
-    assert_equal({:bar=>"foo", :type=>"application/msword"}, index.lookup("bar").metadata)
+    assert_equal({:foo=>"baz", :type=>"text/plain", :size => 31}, index.lookup("foo").metadata)
+    assert_equal({:bar=>"foo", :type=>"application/msword", :size => 32}, index.lookup("bar").metadata)
   end
 end

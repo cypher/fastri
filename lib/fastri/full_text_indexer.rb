@@ -17,7 +17,7 @@ class FullTextIndexer
   end
 
   def add_document(name, data, metadata = {})
-    @doc_hash[name] = [data, metadata]
+    @doc_hash[name] = [data, metadata.merge(:size => data.size)]
     @documents << name
   end
 
