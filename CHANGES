@@ -9,6 +9,7 @@ Features
   (-P, -T, --[no-]pager, --pager-cmd)
 * multiple queries supported:  fri upcase downcase
 * fri -S is 100ms faster since it avoids requiring rubygems.rb
+* list all classes/modules and methods with --classes and --methods
 
 Since version 0.1.1 (2006-11-10)
 ================================

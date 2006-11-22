@@ -32,6 +32,8 @@ options = {
   :full_text_dir => File.join(FastRI::Util.find_home, ".fastri-fulltext"),
   :use_pager => nil,
   :pager => nil,
+  :list_classes => nil,
+  :list_methods => nil,
 }
 override_addr_env = false
 optparser = OptionParser.new do |opts|
@@ -57,6 +59,15 @@ optparser = OptionParser.new do |opts|
   end
 
   opts.on("--show-matches", "Only show matching entries."){ options[:show_matches] = true }
+
+  opts.on("--classes", "List all known classes/modules.") do 
+    options[:use_pager]    = true
+    options[:list_classes] = true
+  end
+  opts.on("--methods", "List all known methods.") do 
+    options[:use_pager]    = true
+    options[:list_methods] = true
+  end
 
   opts.on("-S", "--full-text", "Perform full-text search.") do 
     options[:do_full_text] = true
@@ -102,7 +113,7 @@ optparser = OptionParser.new do |opts|
 end
 optparser.parse!
 
-if ARGV.empty?
+if !options[:list_classes] && !options[:list_methods] && ARGV.empty?
   puts optparser
   exit
 end
@@ -277,6 +288,18 @@ info_options = {
   :width     => options[:width],
   :lookup_order => options[:lookup_order],
 }
+
+# {{{ list classes or methods
+
+if options[:list_classes]
+  puts service.all_classes
+  exit
+elsif options[:list_methods]
+  puts service.all_methods
+  exit
+end
+
+# {{{ normal query
 
 ARGV.each do |term|
   help_query = magic_help(term)
