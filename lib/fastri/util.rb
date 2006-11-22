@@ -19,9 +19,10 @@ unless defined? ::Gem
   end
 end
 # don't let rdoc/ri/ri_paths load rubygems.rb, that takes ~100ms !
-$".unshift "rubygems.rb"
+emulation = $".all?{|x| /rubygems\.rb$/ !~ x} # 1.9 compatibility
+$".unshift "rubygems.rb" if emulation
 require 'rdoc/ri/ri_paths'
-$".delete "rubygems.rb"
+$".delete "rubygems.rb" if emulation
 require 'rdoc/ri/ri_writer'
 
 module FastRI
