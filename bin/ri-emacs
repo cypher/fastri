@@ -182,7 +182,7 @@ end
 
 
 #{{{ event loop
-$stdout.sync = true
+#$stdout.sync = true # better not set sync=true, causes problems with emacs
 EventLoop.new(service).run
 
 # vi: set sw=2 expandtab:

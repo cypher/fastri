@@ -4,3 +4,6 @@ Tomasz Wegrzanowski
 * contributed the code that allows fri to find a method in the ancestors
   for core classes
 
+Dee Zsombor
+===========
+* reported problem with ri-emacs setting $stdout.sync to true
