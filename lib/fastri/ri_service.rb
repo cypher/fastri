@@ -256,6 +256,16 @@ class RiService
     r ? r.map{|x| x.gsub(/\./, "::")} : nil
   end
 
+  # Return array of strings with the names of all known methods.
+  def all_methods
+    @ri_reader.full_method_names
+  end
+
+  # Return array of strings with the names of all known classes.
+  def all_classes
+    @ri_reader.full_class_names
+  end
+
   private
 
   def obtain_unqualified_method_entries(name, separators, order)
