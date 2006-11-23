@@ -34,6 +34,7 @@ options = {
   :pager => nil,
   :list_classes => nil,
   :list_methods => nil,
+  :extended => false,
 }
 override_addr_env = false
 optparser = OptionParser.new do |opts|
@@ -56,6 +57,12 @@ optparser = OptionParser.new do |opts|
           "x:nested and partial",
           "a:match method name anywhere") do |order|
     options[:lookup_order] = order.split(//).map{|x| order_mapping[x]}.compact
+  end
+
+  opts.on("-e", "--extended", "Show all methods for given namespace.") do
+    options[:extended]  = true
+    options[:use_pager] = true
+    options[:format]    = "plain"
   end
 
   opts.on("--show-matches", "Only show matching entries."){ options[:show_matches] = true }
@@ -292,6 +299,7 @@ info_options = {
   :formatter => options[:format],
   :width     => options[:width],
   :lookup_order => options[:lookup_order],
+  :extended  => options[:extended],
 }
 
 # {{{ list classes or methods
