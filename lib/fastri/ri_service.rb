@@ -180,6 +180,7 @@ class RiService
   DEFAULT_INFO_OPTIONS = {
     :formatter => :ansi,
     :width     => 72,
+    :extended  => false,
   }
 
   def matches(keyword, options = {})
@@ -205,6 +206,12 @@ class RiService
       when :namespace
         capture_stdout(display(options)) do |display|
           display.display_class_info(@ri_reader.get_class(entries[0]), @ri_reader)
+          if options[:extended]
+            methods = @ri_reader.methods_under(entries[0], true)
+            methods.each do |meth_entry|
+              display.display_method_info(@ri_reader.get_method(meth_entry))
+            end
+          end
         end
       when :method
         capture_stdout(display(options)) do |display|
