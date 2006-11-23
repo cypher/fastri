@@ -329,6 +329,18 @@ class RiService
       m.add_matcher(:nested_partial_ci) do
         m.yield @ri_reader.methods_under_matching("", /::#{namespace}#{sep_re}#{method}/i, true)
       end
+      m.add_matcher(:namespace_partial) do
+        m.yield @ri_reader.methods_under_matching("", /^#{namespace}[^:]*#{sep_re}#{method}$/, true)
+      end
+      m.add_matcher(:namespace_partial_ci) do
+        m.yield @ri_reader.methods_under_matching("", /^#{namespace}[^:]*#{sep_re}#{method}$/i, true)
+      end
+      m.add_matcher(:full_partial) do
+        m.yield @ri_reader.methods_under_matching("", /^#{namespace}[^:]*#{sep_re}#{method}/, true)
+      end
+      m.add_matcher(:full_partial_ci) do
+        m.yield @ri_reader.methods_under_matching("", /^#{namespace}[^:]*#{sep_re}#{method}/i, true)
+      end
     end
     matcher.get_matches(order)
   end
