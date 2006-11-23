@@ -534,7 +534,7 @@ class RiIndex
     if prefix.empty?
       [//, /^[#.] /]  # the second should never match
     else
-      [/^#{Regexp.escape(prefix)}/, /^#{Regexp.escape(prefix)}([#.])\S+ / ]
+      [/^#{Regexp.escape(prefix)}([#.]|::)/, /^#{Regexp.escape(prefix)}([#.])\S+ / ]
     end
   end
 

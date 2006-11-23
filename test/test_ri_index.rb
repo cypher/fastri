@@ -30,10 +30,29 @@ CDE.foo 1 2
 FGH::Adfdsf#foo 2
 ================================================================================
 EOF
+  INDEX_DATA2 =<<EOF
+#{FastRI::RiIndex::MAGIC}
+Sources:
+system                          /usr/share/ri/system/
+somegem-0.1.0                   /long/path/somegem-0.1.0
+stuff-1.1.0                     /long/path/stuff-1.1.0
+================================================================================
+Namespaces:
+ABC 0 1
+ABCDEF 1 2
+================================================================================
+Methods:
+ABC.bar 0
+ABC#baz 1
+ABCDEF#foo 1
+ABCDEF.foo 1 2
+================================================================================
+EOF
 
   require 'stringio'
   def setup
     @index = FastRI::RiIndex.new_from_IO(StringIO.new(INDEX_DATA))
+    @index2 = FastRI::RiIndex.new_from_IO(StringIO.new(INDEX_DATA2))
   end
 
   def test_dump
@@ -157,6 +176,11 @@ EOF
                  @index.source_paths_for(@index.get_method_entry("CDE.foo")))
   end
 
+  def test_methods_under_same_prefix
+    results = @index2.methods_under("ABC", true, nil)
+    results.map{|x| x.full_name}
+    assert_equal(["ABC.bar", "ABC#baz"], results.map{|x| x.full_name})
+  end
 
   def test_methods_under_scoped
     results = @index.methods_under("ABC", true, 1)
