@@ -50,11 +50,14 @@ optparser = OptionParser.new do |opts|
     'e' => :exact,   'E' => :exact_ci,   'n' => :nested, 'N' => :nested_ci,
     'p' => :partial, 'P' => :partial_ci, 'x' => :nested_partial,
     'X' => :nested_partial_ci, 'a' => :anywhere, 'A' => :anywhere_ci,
+    'm' => :namespace_partial, 'M' => :namespace_partial_ci,
+    'f' => :full_partial, 'F' => :full_partial_ci,
   }
   opts.on("-O", "--order ORDER", "Specify lookup order.",
           "(default: eEnNpPxX)", "Uppercase: case-indep.",
           "e:exact n:nested p:partial (completion)",
-          "x:nested and partial",
+          "x:nested and partial m:complete namespace",
+          "f:complete both class and method",
           "a:match method name anywhere") do |order|
     options[:lookup_order] = order.split(//).map{|x| order_mapping[x]}.compact
   end

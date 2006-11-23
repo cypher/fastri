@@ -6,6 +6,8 @@ Since version 0.2.1 (2006-11-23)
 Features
 --------
 * get all the information about a class/module and its methods with --extended
+* new search methods: complete namespace (-Om), partial completion on both
+  namespace and method name (-Of), and case-indep. variants.
 
 Since version 0.2.0 (2006-11-15)
 ================================
