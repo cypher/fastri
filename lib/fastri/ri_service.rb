@@ -303,6 +303,7 @@ class RiService
 
   def obtain_qualified_method_entries(namespace, method, separators, order)
     namespace, unescaped_namespace = Regexp.escape(namespace), namespace
+    method = Regexp.escape(method)
     matcher = MatchFinder.new do |m|
       m.add_matcher(:exact) do
         separators.each do |sep|
