@@ -276,6 +276,7 @@ class RiService
   private
 
   def obtain_unqualified_method_entries(name, separators, order)
+    name = Regexp.escape(name)
     sep_re = "(" + separators.map{|x| Regexp.escape(x)}.join("|") + ")"
     matcher = MatchFinder.new do |m|
       m.add_matcher(:exact) do
@@ -301,6 +302,7 @@ class RiService
   end
 
   def obtain_qualified_method_entries(namespace, method, separators, order)
+    namespace, unescaped_namespace = Regexp.escape(namespace), namespace
     matcher = MatchFinder.new do |m|
       m.add_matcher(:exact) do
         separators.each do |sep|
@@ -318,7 +320,7 @@ class RiService
         m.yield @ri_reader.methods_under_matching("", /::#{namespace}#{sep_re}#{method}$/i, true)
       end
       m.add_matcher(:partial) do
-        m.yield @ri_reader.methods_under_matching(namespace, /#{sep_re}#{method}/, false)
+        m.yield @ri_reader.methods_under_matching(unescaped_namespace, /#{sep_re}#{method}/, false)
       end
       m.add_matcher(:partial_ci) do
         m.yield @ri_reader.methods_under_matching("", /^#{namespace}#{sep_re}#{method}/i, true)
@@ -346,6 +348,7 @@ class RiService
   end
 
   def obtain_namespace_entries(name, order)
+    name = Regexp.escape(name)
     matcher = MatchFinder.new do |m|
       m.add_matcher(:exact){ m.yield @ri_reader.get_class_entry(name) }
       m.add_matcher(:exact_ci) do 
