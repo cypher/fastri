@@ -96,5 +96,42 @@ module Util
     end
   end
   module_function :find_home
+
+  module MagicHelp
+    def help_method_extract(m) # :nodoc:
+      unless m.inspect =~ %r[\A#<(?:Unbound)?Method: (.*?)>\Z]
+        raise "Cannot parse result of #{m.class}#inspect: #{m.inspect}"
+      end
+      $1.sub(/\A.*?\((.*?)\)(.*)\Z/){ "#{$1}#{$2}" }.sub(/\./, "::").sub(/#<Class:(.*?)>#/) { "#{$1}::" }
+    end
+
+    def magic_help(query)
+      if query =~ /\A(.*?)(#|::|\.)(.*)\Z/
+          c, k, m = $1, $2, $3
+        begin
+          c = Object.const_get(c)
+          m = case k
+              when "#"
+                c.instance_method(m)
+              when "::"
+                c.method(m)
+              when "."
+                begin
+                  c.method(m)
+                rescue NameError
+                  c.instance_method(m)
+                end
+              end
+          help_method_extract(m)
+        rescue Exception
+          query
+        end
+      else
+        query
+      end
+    end
+  end
+
+
 end # module Util
 end # module FastRI

@@ -24,6 +24,7 @@
 
 require 'rinda/ring'
 require 'optparse'
+require 'fastri/util'
 
 # {{{ cmdline parsing and service discovery
 # we bind to 127.0.0.1 by default, because otherwise Ruby will try with
@@ -67,11 +68,13 @@ Please make sure that:
       export FASTRI_ADDR="192.168.1.12"
       fri Array
 EOF
-  exit(-1)
+  exit(-1)                      # '
 end
 service = ring_server.read([:name, :FastRI, nil, nil])[2]
 
 class EventLoop
+  include FastRI::Util::MagicHelp
+
   def initialize(ri)
     @ri = ri
   end
@@ -168,13 +171,13 @@ class EventLoop
   end
 
   def display_args(keyw)
-    data = @ri.args(keyw)
+    data = @ri.args(magic_help(keyw))
     puts data if data
     puts "RI_EMACS_END_OF_INFO"
   end
 
   def display_info(keyw)
-    data = @ri.info(keyw)
+    data = @ri.info(magic_help(keyw))
     puts data if data
     puts "RI_EMACS_END_OF_INFO"
   end
