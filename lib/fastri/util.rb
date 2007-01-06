@@ -107,7 +107,8 @@ module Util
 
     def magic_help(query)
       if query =~ /\A(.*?)(#|::|\.)(.*)\Z/
-          c, k, m = $1, $2, $3
+        c, k, m = $1, $2, $3
+        mid = m
         begin
           c = Object.const_get(c)
           m = case k
@@ -122,9 +123,14 @@ module Util
                   c.instance_method(m)
                 end
               end
-          if (ret = help_method_extract(m)) == 'Class#new' and
+
+          ret = help_method_extract(m)
+          if ret == 'Class#new' and
               c.private_method_defined?(:initialize)
             return c.name + "::new"
+          elsif ret =~ /^Kernel#/ and
+              Kernel.instance_methods(false).include? mid
+            return "Object##{mid}"
           end
           ret
         rescue Exception

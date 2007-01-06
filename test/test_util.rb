@@ -57,4 +57,11 @@ class TestUtilMagicHelp < Test::Unit::TestCase
     assert_equal("Struct::new", magic_help("Struct::new"))
   end
 
+  def test_magic_help__Kernel_public_instance_methods
+    # It is mysterious.
+    # Object.instance_method(:object_id) # => #<UnboundMethod: Object(Kernel)#object_id>
+    assert_equal("Object#object_id", magic_help("Object.object_id"))
+    assert_equal("Object#object_id", magic_help("Object#object_id"))
+  end
+
 end
