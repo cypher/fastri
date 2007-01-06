@@ -122,7 +122,11 @@ module Util
                   c.instance_method(m)
                 end
               end
-          help_method_extract(m)
+          if (ret = help_method_extract(m)) == 'Class#new' and
+              c.private_method_defined?(:initialize)
+            return c.name + "::new"
+          end
+          ret
         rescue Exception
           query
         end

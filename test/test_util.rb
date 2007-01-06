@@ -36,3 +36,25 @@ EOF
     assert_equal("Foo::Bar.eql?", gem_relpath_to_full_name("Foo/Bar/eql%3f-c.yaml"))
   end
 end
+
+class TestUtilMagicHelp < Test::Unit::TestCase
+  include FastRI::Util::MagicHelp
+  def test_magic_help
+    assert_equal("IO::readlines", magic_help("IO::readlines"))
+    assert_equal("IO::readlines", magic_help("IO.readlines"))
+
+    assert_equal("Enumerable#inject", magic_help("File#inject"))
+    assert_equal("Enumerable#inject", magic_help("File.inject"))
+
+    assert_equal("IO::readlines", magic_help("File.readlines"))
+    assert_equal("IO::readlines", magic_help("File::readlines"))
+  end
+
+  def test_magic_help__new
+    assert_equal("Array::new", magic_help("Array::new"))
+    assert_equal("Array::new", magic_help("Array.new"))
+    assert_equal("Struct::new", magic_help("Struct.new"))
+    assert_equal("Struct::new", magic_help("Struct::new"))
+  end
+
+end
