@@ -285,7 +285,15 @@ ARGV.each do |term|
   if options[:show_matches]
     puts service.matches(help_query, info_options).sort
   else
-    puts service.info(help_query, info_options)
+    result = service.info(help_query, info_options)
+    # second-guess the correct method type only as the last resort.
+    if result
+      puts result
+    elsif (new_query = FastRI::Util.change_query_method_type(help_query)) != help_query
+      puts service.info(new_query)
+    else
+      puts nil
+    end
   end
 end
 # vi: set sw=2 expandtab:
