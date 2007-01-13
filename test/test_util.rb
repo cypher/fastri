@@ -35,6 +35,15 @@ EOF
     assert_equal("Foo::Bar#eql?", gem_relpath_to_full_name("Foo/Bar/eql%3f-i.yaml"))
     assert_equal("Foo::Bar.eql?", gem_relpath_to_full_name("Foo/Bar/eql%3f-c.yaml"))
   end
+
+  def test_change_query_method_type
+    assert_equal(".foo", change_query_method_type(".foo"))
+    assert_equal("::foo", change_query_method_type("#foo"))
+    assert_equal("#foo", change_query_method_type("::foo"))
+    assert_equal("A::B.foo", change_query_method_type("A::B.foo"))
+    assert_equal("A::B::foo", change_query_method_type("A::B#foo"))
+    assert_equal("A::B#foo", change_query_method_type("A::B::foo"))
+  end
 end
 
 class TestUtilMagicHelp < Test::Unit::TestCase

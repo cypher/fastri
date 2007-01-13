@@ -97,6 +97,22 @@ module Util
   end
   module_function :find_home
 
+  def change_query_method_type(query)
+    if md = /\A(.*)(#|\.|::)([^#.:]+)\z/.match(query)
+      namespace, sep, meth = md.captures
+      case sep
+      when /::/ then "#{namespace}##{meth}"
+      when /#/ then "#{namespace}::#{meth}"
+      else 
+        query
+      end
+    else
+      query
+    end
+  end
+  module_function :change_query_method_type
+
+
   module MagicHelp
     def help_method_extract(m) # :nodoc:
       unless m.inspect =~ %r[\A#<(?:Unbound)?Method: (.*?)>\Z]
