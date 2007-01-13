@@ -39,6 +39,11 @@ end
 
 class TestUtilMagicHelp < Test::Unit::TestCase
   include FastRI::Util::MagicHelp
+  module TestModule
+    def foo; end
+    module_function :foo
+  end
+
   def test_magic_help
     assert_equal("IO::readlines", magic_help("IO::readlines"))
     assert_equal("IO::readlines", magic_help("IO.readlines"))
@@ -48,6 +53,11 @@ class TestUtilMagicHelp < Test::Unit::TestCase
 
     assert_equal("IO::readlines", magic_help("File.readlines"))
     assert_equal("IO::readlines", magic_help("File::readlines"))
+  end
+
+  def test_magic_help_nested_namespaces
+    assert_equal("TestUtilMagicHelp::TestModule::foo", 
+                 magic_help("TestUtilMagicHelp::TestModule.foo"))
   end
 
   def test_magic_help__new

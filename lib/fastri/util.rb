@@ -106,11 +106,11 @@ module Util
     end
 
     def magic_help(query)
-      if query =~ /\A(.*?)(#|::|\.)(.*)\Z/
+      if query =~ /\A(.*?)(#|::|\.)([^:#.]+)\Z/
         c, k, m = $1, $2, $3
         mid = m
         begin
-          c = Object.const_get(c)
+          c = c.split(/::/).inject(Object){|s,x| s.const_get(x)}
           m = case k
               when "#"
                 c.instance_method(m)
