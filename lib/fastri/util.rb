@@ -134,7 +134,13 @@ module Util
                 c.method(m)
               when "."
                 begin
-                  c.method(m)
+                  # if it's a private_instance_method, assume it was created
+                  # with module_function
+                  if c.private_instance_methods.include?(m)
+                    c.instance_method(m)
+                  else
+                    c.method(m)
+                  end
                 rescue NameError
                   c.instance_method(m)
                 end

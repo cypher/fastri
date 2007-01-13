@@ -51,6 +51,9 @@ class TestUtilMagicHelp < Test::Unit::TestCase
   module TestModule
     def foo; end
     module_function :foo
+
+    def self.bar; end
+    def bar; end
   end
 
   def test_magic_help
@@ -65,8 +68,10 @@ class TestUtilMagicHelp < Test::Unit::TestCase
   end
 
   def test_magic_help_nested_namespaces
-    assert_equal("TestUtilMagicHelp::TestModule::foo", 
+    assert_equal("TestUtilMagicHelp::TestModule#foo", 
                  magic_help("TestUtilMagicHelp::TestModule.foo"))
+    assert_equal("TestUtilMagicHelp::TestModule::bar", 
+                 magic_help("TestUtilMagicHelp::TestModule.bar"))
   end
 
   def test_magic_help__new
