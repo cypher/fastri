@@ -170,16 +170,22 @@ class EventLoop
     end
   end
 
-  def display_args(keyw)
-    data = @ri.args(magic_help(keyw))
-    puts data if data
+  def display_(what, keyw)
+    data = @ri.__send__(what, magic_help(keyw))
+    if data
+      puts data
+    elsif (new_keyw = FastRI::Util.change_query_method_type(keyw)) != keyw
+      puts @ri.__send__(what, new_keyw)
+    end
     puts "RI_EMACS_END_OF_INFO"
   end
 
+  def display_args(keyw)
+    display_ :args, keyw
+  end
+
   def display_info(keyw)
-    data = @ri.info(magic_help(keyw))
-    puts data if data
-    puts "RI_EMACS_END_OF_INFO"
+    display_ :info, keyw
   end
 end
 
