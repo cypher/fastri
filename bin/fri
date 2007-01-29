@@ -7,6 +7,8 @@ require 'optparse'
 require 'fastri/util'
 require 'fastri/full_text_index'
 
+default_local_mode = File.basename($0)[/^qri/] ? true : false
+
 # we bind to 127.0.0.1 by default, because otherwise Ruby will try with
 # 0.0.0.0, which results in a DNS request, adding way too much latency
 options = {
@@ -36,13 +38,16 @@ options = {
   :list_methods => nil,
   :extended => false,
   :index_file => File.join(FastRI::Util.find_home, ".fastri-index"),
-  :local_mode => false,
+  :local_mode => default_local_mode,
 }
-override_addr_env = false
-optparser = OptionParser.new do |opts|
-  opts.banner = "Usage: fri [options] <query>"
 
-  opts.on("-L", "--local", "Try to use local index instead of DRb service.") do
+override_addr_env = false
+
+optparser = OptionParser.new do |opts|
+  opts.banner = "Usage: #{File.basename($0)} [options] <query>"
+
+  opts.on("-L", "--local", "Try to use local index instead of DRb service.",
+                           *[("(default)" if default_local_mode)].compact) do
     options[:local_mode] = true
   end
   opts.on("--index-file=FILE", "Use index file (forces --local mode).",
@@ -50,7 +55,7 @@ optparser = OptionParser.new do |opts|
     options[:index_file] = file
     options[:local_mode] = true
   end
-  opts.on("-R", "--remote", "Use DRb service. (default)") do
+  opts.on("-R", "--remote", "Use DRb service. #{'(default)' unless default_local_mode}") do
     options[:local_mode] = false
   end
   opts.on("-s", "--bind ADDR", "Bind to ADDR for incoming DRb connections.",
