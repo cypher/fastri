@@ -35,11 +35,24 @@ options = {
   :list_classes => nil,
   :list_methods => nil,
   :extended => false,
+  :index_file => File.join(FastRI::Util.find_home, ".fastri-index"),
+  :local_mode => false,
 }
 override_addr_env = false
 optparser = OptionParser.new do |opts|
   opts.banner = "Usage: fri [options] <query>"
 
+  opts.on("-L", "--local", "Try to use local index instead of DRb service.") do
+    options[:local_mode] = true
+  end
+  opts.on("--index-file=FILE", "Use index file (forces --local mode).",
+          "(default: #{options[:index_file]})") do |file|
+    options[:index_file] = file
+    options[:local_mode] = true
+  end
+  opts.on("-R", "--remote", "Use DRb service. (default)") do
+    options[:local_mode] = false
+  end
   opts.on("-s", "--bind ADDR", "Bind to ADDR for incoming DRb connections.",
           "(default: 127.0.0.1)") do |addr|
     options[:addr] = addr
@@ -233,26 +246,40 @@ end
 perform_fulltext_search(options) if options[:do_full_text]
 
 #{{{ normal query
-require 'rinda/ring'
+if options[:local_mode]
+  require 'fastri/ri_service'
+  ri_reader = open(options[:index_file], "rb"){|io| Marshal.load io } rescue nil
+  unless ri_reader
+    puts <<EOF
+Couldn't open the index:
+#{options[:index_file]}
 
+The index needs to be rebuilt with
+   fastri-server -b
+EOF
+    exit(-1)
+  end
+  service = FastRI::RiService.new(ri_reader)
+else # remote
+  require 'rinda/ring'
 
-#{{{ determine the address to bind to
-if override_addr_env
-  addr_spec = options[:addr]
-else
-  addr_spec = ENV["FASTRI_ADDR"] || options[:addr]
-end
+  #{{{ determine the address to bind to
+  if override_addr_env
+    addr_spec = options[:addr]
+  else
+    addr_spec = ENV["FASTRI_ADDR"] || options[:addr]
+  end
 
-ip   = addr_spec[/^[^:]+/]    || "127.0.0.1"
-port = addr_spec[/:(\d+)/, 1] || 0
-addr = "druby://#{ip}:#{port}"
+  ip   = addr_spec[/^[^:]+/]    || "127.0.0.1"
+  port = addr_spec[/:(\d+)/, 1] || 0
+  addr = "druby://#{ip}:#{port}"
 
-#{{{ start DRb and perform request
-begin
-  DRb.start_service(addr)
-  ring_server = Rinda::RingFinger.primary
-rescue Exception
-  $stderr.puts <<EOF
+  #{{{ start DRb and perform request
+  begin
+    DRb.start_service(addr)
+    ring_server = Rinda::RingFinger.primary
+  rescue Exception
+    $stderr.puts <<EOF
 Couldn't initialize DRb and locate the Ring server.
 
 Please make sure that:
@@ -263,9 +290,12 @@ Please make sure that:
       export FASTRI_ADDR="192.168.1.12"
       fri Array
 EOF
-  exit(-1)
+    exit(-1)
+  end
+  service = ring_server.read([:name, :FastRI, nil, nil])[2]
 end
-service = ring_server.read([:name, :FastRI, nil, nil])[2]
+
+
 info_options = {
   :formatter => options[:format],
   :width     => options[:width],

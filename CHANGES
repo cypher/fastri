@@ -8,6 +8,8 @@ Features
 * get all the information about a class/module and its methods with --extended
 * new search methods: complete namespace (-Om), partial completion on both
   namespace and method name (-Of), and case-indep. variants.
+* --local (-L) and --remote (-L) (default) options. --local makes fri operate
+  in standalone mode, without requiring fastri-server.
 * try to second-guess the correct method type if all search methods fail
   and the type was explicitly given
 
