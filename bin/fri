@@ -44,6 +44,8 @@ options = {
 override_addr_env = false
 
 optparser = OptionParser.new do |opts|
+  opts.version = FastRI::FASTRI_VERSION
+  opts.release = FastRI::FASTRI_RELEASE_DATE
   opts.banner = "Usage: #{File.basename($0)} [options] <query>"
 
   opts.on("-L", "--local", "Try to use local index instead of DRb service.",

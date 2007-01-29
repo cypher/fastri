@@ -107,6 +107,8 @@ options = {:allowed_hosts => ["127.0.0.1"], :addr => "127.0.0.1",
   :full_text_dir => File.join(home, ".fastri-fulltext"),
 }
 OptionParser.new do |opts|
+  opts.version = FastRI::FASTRI_VERSION
+  opts.release = FastRI::FASTRI_RELEASE_DATE
   opts.banner = "Usage: fastri-server.rb [options]"
 
   opts.on("-a", "--allow HOST", "Allow connections from HOST.",
