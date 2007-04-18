@@ -3,7 +3,6 @@
 # Copyright (C) 2006 Mauricio Fernandez <mfp@acm.org>
 #
 
-require 'optparse'
 require 'fastri/util'
 require 'fastri/full_text_index'
 
@@ -43,115 +42,120 @@ options = {
 
 override_addr_env = false
 
-optparser = OptionParser.new do |opts|
-  opts.version = FastRI::FASTRI_VERSION
-  opts.release = FastRI::FASTRI_RELEASE_DATE
-  opts.banner = "Usage: #{File.basename($0)} [options] <query>"
+# only load optparse if actually needed
+# saves ~0.01-0.04s.
+if (arg = ARGV[0]) && arg[0, 1] == "-" or ARGV.empty?
+  require 'optparse'
+  optparser = OptionParser.new do |opts|
+    opts.version = FastRI::FASTRI_VERSION
+    opts.release = FastRI::FASTRI_RELEASE_DATE
+    opts.banner = "Usage: #{File.basename($0)} [options] <query>"
 
-  opts.on("-L", "--local", "Try to use local index instead of DRb service.",
-                           *[("(default)" if default_local_mode)].compact) do
-    options[:local_mode] = true
-  end
-  opts.on("--index-file=FILE", "Use index file (forces --local mode).",
-          "(default: #{options[:index_file]})") do |file|
-    options[:index_file] = file
-    options[:local_mode] = true
-  end
-  opts.on("-R", "--remote", "Use DRb service. #{'(default)' unless default_local_mode}") do
-    options[:local_mode] = false
-  end
-  opts.on("-s", "--bind ADDR", "Bind to ADDR for incoming DRb connections.",
-          "(default: 127.0.0.1)") do |addr|
-    options[:addr] = addr
-    override_addr_env = true
-  end
+    opts.on("-L", "--local", "Try to use local index instead of DRb service.",
+                             *[("(default)" if default_local_mode)].compact) do
+      options[:local_mode] = true
+    end
+    opts.on("--index-file=FILE", "Use index file (forces --local mode).",
+            "(default: #{options[:index_file]})") do |file|
+      options[:index_file] = file
+      options[:local_mode] = true
+    end
+    opts.on("-R", "--remote", "Use DRb service. #{'(default)' unless default_local_mode}") do
+      options[:local_mode] = false
+    end
+    opts.on("-s", "--bind ADDR", "Bind to ADDR for incoming DRb connections.",
+            "(default: 127.0.0.1)") do |addr|
+      options[:addr] = addr
+      override_addr_env = true
+    end
 
-  order_mapping = {
-    'e' => :exact,   'E' => :exact_ci,   'n' => :nested, 'N' => :nested_ci,
-    'p' => :partial, 'P' => :partial_ci, 'x' => :nested_partial,
-    'X' => :nested_partial_ci, 'a' => :anywhere, 'A' => :anywhere_ci,
-    'm' => :namespace_partial, 'M' => :namespace_partial_ci,
-    'f' => :full_partial, 'F' => :full_partial_ci,
-  }
-  opts.on("-O", "--order ORDER", "Specify lookup order.",
-          "(default: eEnNpPxX)", "Uppercase: case-indep.",
-          "e:exact n:nested p:partial (completion)",
-          "x:nested and partial m:complete namespace",
-          "f:complete both class and method",
-          "a:match method name anywhere") do |order|
-    options[:lookup_order] = order.split(//).map{|x| order_mapping[x]}.compact
-  end
+    order_mapping = {
+      'e' => :exact,   'E' => :exact_ci,   'n' => :nested, 'N' => :nested_ci,
+      'p' => :partial, 'P' => :partial_ci, 'x' => :nested_partial,
+      'X' => :nested_partial_ci, 'a' => :anywhere, 'A' => :anywhere_ci,
+      'm' => :namespace_partial, 'M' => :namespace_partial_ci,
+      'f' => :full_partial, 'F' => :full_partial_ci,
+    }
+    opts.on("-O", "--order ORDER", "Specify lookup order.",
+            "(default: eEnNpPxX)", "Uppercase: case-indep.",
+            "e:exact n:nested p:partial (completion)",
+            "x:nested and partial m:complete namespace",
+            "f:complete both class and method",
+            "a:match method name anywhere") do |order|
+      options[:lookup_order] = order.split(//).map{|x| order_mapping[x]}.compact
+    end
 
-  opts.on("-e", "--extended", "Show all methods for given namespace.") do
-    options[:extended]  = true
-    options[:use_pager] = true
-    options[:format]    = "plain"
-  end
+    opts.on("-e", "--extended", "Show all methods for given namespace.") do
+      options[:extended]  = true
+      options[:use_pager] = true
+      options[:format]    = "plain"
+    end
 
-  opts.on("--show-matches", "Only show matching entries."){ options[:show_matches] = true }
+    opts.on("--show-matches", "Only show matching entries."){ options[:show_matches] = true }
 
-  opts.on("--classes", "List all known classes/modules.") do 
-    options[:use_pager]    = true
-    options[:list_classes] = true
-  end
-  opts.on("--methods", "List all known methods.") do 
-    options[:use_pager]    = true
-    options[:list_methods] = true
-  end
-  opts.on("-l", "--list-names", "List all known namespaces/methods.") do
-    options[:use_pager]    = true
-    options[:list_classes] = true
-    options[:list_methods] = true
-  end
+    opts.on("--classes", "List all known classes/modules.") do 
+      options[:use_pager]    = true
+      options[:list_classes] = true
+    end
+    opts.on("--methods", "List all known methods.") do 
+      options[:use_pager]    = true
+      options[:list_methods] = true
+    end
+    opts.on("-l", "--list-names", "List all known namespaces/methods.") do
+      options[:use_pager]    = true
+      options[:list_classes] = true
+      options[:list_methods] = true
+    end
 
-  opts.on("-S", "--full-text", "Perform full-text search.") do 
-    options[:do_full_text] = true
-    options[:use_pager]    = true if options[:use_pager].nil?
-    options[:format]       = "plain"
+    opts.on("-S", "--full-text", "Perform full-text search.") do 
+      options[:do_full_text] = true
+      options[:use_pager]    = true if options[:use_pager].nil?
+      options[:format]       = "plain"
+    end
+
+    opts.on("-F", "--full-text-dir DIR", "Use full-text index in DIR",
+            "(default: #{options[:full_text_dir]})") do |dir|
+      options[:full_text_dir] = dir if dir
+      options[:do_full_text]  = true
+      options[:use_pager]     = true
+      options[:format]        = "plain"
+    end
+
+    opts.on("-f", "--format FMT", "Format to use when displaying output:",
+            "   ansi, plain (default: #{options[:format]})") do |format|
+      options[:format] = format
+    end
+
+    opts.on("-P", "--[no-]pager", "Use pager.", "(default: don't)") do |usepager|
+      options[:use_pager] = usepager
+      options[:format] = "plain" if usepager
+    end
+
+    opts.on("-T", "Don't use a pager."){ options[:use_pager] = false }
+
+    opts.on("--pager-cmd PAGER", "Use pager PAGER.", "(default: don't)") do |pager|
+      options[:pager]     = pager
+      options[:use_pager] = true
+      options[:format]    = "plain"
+    end
+
+    opts.on("-w", "--width WIDTH", "Set the width of the output.") do |width|
+      w = width.to_i
+      options[:width] = w > 0 ? w : options[:width]
+    end
+
+    opts.on("-h", "--help", "Show this help message") do 
+      puts opts
+      exit
+    end
   end
+  optparser.parse!
 
-  opts.on("-F", "--full-text-dir DIR", "Use full-text index in DIR",
-          "(default: #{options[:full_text_dir]})") do |dir|
-    options[:full_text_dir] = dir if dir
-    options[:do_full_text]  = true
-    options[:use_pager]     = true
-    options[:format]        = "plain"
-  end
-
-  opts.on("-f", "--format FMT", "Format to use when displaying output:",
-          "   ansi, plain (default: #{options[:format]})") do |format|
-    options[:format] = format
-  end
-
-  opts.on("-P", "--[no-]pager", "Use pager.", "(default: don't)") do |usepager|
-    options[:use_pager] = usepager
-    options[:format] = "plain" if usepager
-  end
-
-  opts.on("-T", "Don't use a pager."){ options[:use_pager] = false }
-
-  opts.on("--pager-cmd PAGER", "Use pager PAGER.", "(default: don't)") do |pager|
-    options[:pager]     = pager
-    options[:use_pager] = true
-    options[:format]    = "plain"
-  end
-
-  opts.on("-w", "--width WIDTH", "Set the width of the output.") do |width|
-    w = width.to_i
-    options[:width] = w > 0 ? w : options[:width]
-  end
-
-  opts.on("-h", "--help", "Show this help message") do 
-    puts opts
+  if !options[:list_classes] && !options[:list_methods] && ARGV.empty?
+    puts optparser
     exit
   end
-end
-optparser.parse!
-
-if !options[:list_classes] && !options[:list_methods] && ARGV.empty?
-  puts optparser
-  exit
-end
+end # lazy optparse loading
 
 # {{{ try to find where the method comes from exactly
 include FastRI::Util::MagicHelp

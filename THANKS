@@ -7,3 +7,8 @@ Tomasz Wegrzanowski
 Dee Zsombor
 ===========
 * reported problem with ri-emacs setting $stdout.sync to true
+
+Greg Weber
+==========
+* came up with the idea to load optparse only when needed,
+  saving some 10-30ms per run.
