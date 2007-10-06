@@ -37,7 +37,7 @@ module Util
     gemdirs = Dir["#{Gem.path}/doc/*/ri"]
     gems = Hash.new{|h,k| h[k] = []}
     gemdirs.each do |path|
-      gemname, version = %r{/([^/]+)-(.*)/ri$}.match(path).captures
+      gemname, version = %r{/([^/]+)-([^-]*)/ri$}.match(path).captures
       if gemname.nil? # doesn't follow any conventions :(
         gems[path[%r{/([^/]+)/ri$}, 1]] << [nil, path]
       else

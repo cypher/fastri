@@ -12,3 +12,7 @@ Greg Weber
 ==========
 * came up with the idea to load optparse only when needed,
   saving some 10-30ms per run.
+
+Steven Lumos
+============
+* found bug triggered by hyphens in Gem.path
