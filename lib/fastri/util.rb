@@ -7,13 +7,27 @@ unless defined? ::Gem
   require 'rbconfig'
   module Gem
     def self.path
-      ENV['GEM_HOME'] || default_dir
+      [ENV['GEM_HOME'], ENV['GEM_PATH'], default_dir].compact.flatten
     end
     def self.default_dir
       if defined? RUBY_FRAMEWORK_VERSION
-        return File.join(File.dirname(Config::CONFIG["sitedir"]), "Gems")
+        paths = []
+        paths << APPLE_GEM_HOME if defined? APPLE_GEM_HOME
+        path = File.join(File.dirname(Config::CONFIG["sitedir"]), "Gems")
+        newpath = File.join(path, Config::CONFIG['ruby_version'])
+        # RubyGems post r1498 appends the ruby version to the path. This
+        # modification was included in the RubyGems shipped with 10.5.0.
+        if File.directory?(newpath)
+          # try new path first, user might have upgraded RubyGems and left old
+          # installation behind
+          paths + [ newpath ]
+        else
+          # pre-10.5.0 or older RubyGems
+          paths + [ path ]
+        end
       else
-        File.join(Config::CONFIG['libdir'], 'ruby', 'gems', Config::CONFIG['ruby_version'])
+        [ File.join(Config::CONFIG['libdir'], 'ruby', 'gems',
+                   Config::CONFIG['ruby_version']) ]
       end
     end
   end
@@ -34,7 +48,7 @@ module Util
   # (once per version).
   def gem_directories_unique
     return [] unless defined? Gem
-    gemdirs = Dir["#{Gem.path}/doc/*/ri"]
+    gemdirs = Gem.path.map{|p| Dir["#{p}/doc/*/ri"]}.flatten
     gems = Hash.new{|h,k| h[k] = []}
     gemdirs.each do |path|
       gemname, version = %r{/([^/]+)-([^-]*)/ri$}.match(path).captures

@@ -16,3 +16,11 @@ Greg Weber
 Steven Lumos
 ============
 * found bug triggered by hyphens in Gem.path
+
+Lee Marlow
+==========
+* helped fix FastRI on Leopard
+
+Steve Madsen
+============
+* reported the problems on Leopard and tested the patches

@@ -3,6 +3,7 @@ User-visible changes in FastRI
 Since version 0.3.0 (2007-01-29)
 ================================
 * speed increases
+* works on Leopard and with non-standard RubyGems setups
 
 Since version 0.2.1 (2006-11-23)
 ================================
