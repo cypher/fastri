@@ -38,9 +38,11 @@ options = {
   :extended => false,
   :index_file => File.join(FastRI::Util.find_home, ".fastri-index"),
   :local_mode => default_local_mode,
+  :do_second_guess => true
 }
 
 override_addr_env = false
+
 
 # only load optparse if actually needed
 # saves ~0.01-0.04s.
@@ -83,6 +85,11 @@ if (arg = ARGV[0]) && arg[0, 1] == "-" or ARGV.empty?
             "f:complete both class and method",
             "a:match method name anywhere") do |order|
       options[:lookup_order] = order.split(//).map{|x| order_mapping[x]}.compact
+    end
+
+    opts.on("-1", "--exact", "Does not do second guess(exact query).") do
+      options[:do_second_guess] = false
+      options[:lookup_order] = [ :exact ]
     end
 
     opts.on("-e", "--extended", "Show all methods for given namespace.") do
@@ -330,7 +337,7 @@ ARGV.each do |term|
     # second-guess the correct method type only as the last resort.
     if result
       puts result
-    elsif (new_query = FastRI::Util.change_query_method_type(help_query)) != help_query
+    elsif options[:do_second_guess] and (new_query = FastRI::Util.change_query_method_type(help_query)) != help_query
       puts service.info(new_query)
     else
       puts nil
